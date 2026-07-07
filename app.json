@@ -1,17 +1,26 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "カーケアセンター",
+    "slug": "carcare-center-app",
+    "scheme": "carcarecenter",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "experiments": {
+      "typedRoutes": true
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "jp.co.carcarecenter.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "受付QRコードの読み取りに使用します"
+      }
     },
     "android": {
+      "package": "jp.co.carcarecenter.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,6 +29,28 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "受付QRコードの読み取りに使用します"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#b8973a"
+        }
+      ]
+    ],
+    "extra": {
+      "API_BASE": "https://carcare-reservation.netlify.app/.netlify/functions",
+      "STATUS_BASE_URL": "https://carcare-reservation.netlify.app"
     }
   }
 }
