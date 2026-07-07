@@ -2,14 +2,12 @@
    (tabs)/index.tsx  ―  S2 ホーム（SPEC.md §4.2）
    ------------------------------------------------------------
    ヒーローカード → 進行中の予約 → 店舗一覧、の順に表示。
-   「予約する」は Phase 3 で /reserve（S3〜S7）へ接続済み。
-   「受付QRをスキャン」は Phase 4 のQRスキャン画面（S12）に接続予定のため、
-   今は仮のプレースホルダー。
+   「予約する」は Phase 3 で /reserve（S3〜S7）へ、
+   「受付QRをスキャン」は Phase 4 で /scan（S12）へ接続済み。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   Linking,
   RefreshControl,
@@ -70,8 +68,7 @@ export default function HomeScreen() {
   };
 
   const handleScan = () => {
-    // Phase 4 で QRスキャン画面（S12）に接続する
-    Alert.alert("準備中です", "QRスキャン機能は近日公開予定です。");
+    router.push("/scan");
   };
 
   return (

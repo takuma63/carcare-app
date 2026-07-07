@@ -3,7 +3,8 @@
    ------------------------------------------------------------
    氏名（必須）＋電話番号/メールアドレス（どちらか必須）を入力して
    app-register を呼び、成功したらホーム（(tabs)）へ。
-   ※ プッシュ通知の許可ダイアログ・push-register は Phase 4 で追加する。
+   登録直後にプッシュ通知の許可ダイアログを出し、許可されたら
+   push-register でトークンを送信する（SPEC.md §4.2 S1）。
 ============================================================ */
 
 import React, { useState } from "react";
@@ -20,6 +21,7 @@ import {
 import { GoldButton } from "@/components/GoldButton";
 import { useAuth } from "@/lib/auth-context";
 import { registerProfile, ApiError } from "@/lib/api";
+import { registerForPushNotifications } from "@/lib/push";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
 export default function RegisterScreen() {
@@ -53,6 +55,7 @@ export default function RegisterScreen() {
       });
       await signIn(result.auth_token, result.customer);
       // Stack.Protected が token の有無を見て自動的に (tabs) へ切り替える
+      registerForPushNotifications();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "登録に失敗しました。時間をおいて再度お試しください。");
     } finally {
