@@ -2,9 +2,9 @@
    (tabs)/index.tsx  ―  S2 ホーム（SPEC.md §4.2）
    ------------------------------------------------------------
    ヒーローカード → 進行中の予約 → 店舗一覧、の順に表示。
-   「予約する」「受付QRをスキャン」は Phase 3・Phase 4 で実装する
-   画面へのリンクのため、今は仮のプレースホルダー（IMPLEMENTATION_PLAN.md
-   Phase 2「予約ボタンは次フェーズまで仮」の指示どおり）。
+   「予約する」は Phase 3 で /reserve（S3〜S7）へ接続済み。
+   「受付QRをスキャン」は Phase 4 のQRスキャン画面（S12）に接続予定のため、
+   今は仮のプレースホルダー。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
@@ -66,8 +66,7 @@ export default function HomeScreen() {
   };
 
   const handleReserve = () => {
-    // Phase 3 で予約フロー（S3〜S7）に接続する
-    Alert.alert("準備中です", "ご予約機能は近日公開予定です。");
+    router.push("/reserve");
   };
 
   const handleScan = () => {
