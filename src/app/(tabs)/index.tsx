@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.goldDeep,
+    lineHeight: 20,
   },
   sectionTitle: {
     fontFamily: fonts.serifJp,

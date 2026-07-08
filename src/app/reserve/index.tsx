@@ -264,6 +264,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
+    lineHeight: 20,
   },
   categoryLabel: {
     fontFamily: fonts.sansMedium,

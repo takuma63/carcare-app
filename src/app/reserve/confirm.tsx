@@ -189,6 +189,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.text,
     flexShrink: 1,
+    lineHeight: 20,
   },
   itemPrice: {
     fontFamily: fonts.sans,
@@ -271,6 +272,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.text,
+    lineHeight: 20,
   },
   paymentTextDisabled: {
     color: colors.textLight,
@@ -301,6 +303,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.danger,
+    lineHeight: 20,
   },
   bottomBar: {
     padding: spacing.md,

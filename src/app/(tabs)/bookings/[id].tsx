@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.text,
     textAlign: "center",
+    lineHeight: 20,
   },
   qrCard: {
     alignItems: "center",
@@ -198,6 +199,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textLight,
     textAlign: "center",
+    lineHeight: 20,
   },
   detailCard: {
     gap: spacing.sm,
@@ -239,6 +241,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.text,
     flexShrink: 1,
+    lineHeight: 20,
   },
   itemPrice: {
     fontFamily: fonts.sans,

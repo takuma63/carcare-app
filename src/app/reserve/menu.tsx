@@ -7,7 +7,16 @@
 ============================================================ */
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
@@ -28,6 +37,15 @@ function yen(n: number): string {
   return `¥${n.toLocaleString("ja-JP")}`;
 }
 
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+/* アコーディオン開閉・タブ切替・選択肢の出現をふわっと動かす */
+function animateNext() {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
+
 export default function MenuSelectScreen() {
   const router = useRouter();
   const { menu, category, selections, toggleItem, setOptionIndex, setQty, summary } = useReservation();
@@ -45,7 +63,18 @@ export default function MenuSelectScreen() {
   const selectionCount = Object.keys(selections).length;
 
   const toggleOpen = (groupId: string) => {
+    animateNext();
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const handleToggleItem = (item: MenuItem, groupId: string) => {
+    animateNext();
+    toggleItem(item, groupId);
+  };
+
+  const handleTab = (tab: "wash" | "coating") => {
+    animateNext();
+    setActiveTab(tab);
   };
 
   const renderPriceLabel = (item: MenuItem): string => {
@@ -68,7 +97,7 @@ export default function MenuSelectScreen() {
 
     return (
       <View key={item.id} style={styles.itemBlock}>
-        <TouchableOpacity style={styles.itemRow} onPress={() => toggleItem(item, group.id)} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.itemRow} onPress={() => handleToggleItem(item, group.id)} activeOpacity={0.7}>
           <View style={[styles.checkbox, isSelected && styles.checkboxOn]}>
             {isSelected && <Feather name="check" size={14} color={colors.white} />}
           </View>
@@ -170,7 +199,7 @@ export default function MenuSelectScreen() {
             <TouchableOpacity
               key={tab.key}
               style={[styles.tab, activeTab === tab.key && styles.tabOn]}
-              onPress={() => setActiveTab(tab.key)}
+              onPress={() => handleTab(tab.key)}
             >
               <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextOn]}>{tab.label}</Text>
               {hasSelectionIn([...tab.ids]) && <View style={styles.tabDot} />}

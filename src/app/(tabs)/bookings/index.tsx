@@ -6,7 +6,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { Card } from "@/components/Card";
+import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchMyBookings, ApiError } from "@/lib/api";
 import { track } from "@/lib/analytics";
@@ -60,7 +62,10 @@ export default function BookingsScreen() {
   if (!bookings.length) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>まだご予約はありません。</Text>
+        <Feather name="calendar" size={40} color={colors.gold} />
+        <Text style={styles.emptyTitle}>まだご予約はありません</Text>
+        <Text style={styles.emptyText}>手洗い洗車・コーティングのご予約は{"\n"}こちらからどうぞ。</Text>
+        <GoldButton title="予約する" onPress={() => router.push("/reserve")} style={styles.emptyButton} />
       </View>
     );
   }
@@ -116,6 +121,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.bg,
     padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    fontFamily: fonts.serifJp,
+    fontSize: fontSize.h3,
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
+  emptyText: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  emptyButton: {
+    minWidth: 200,
+    marginTop: spacing.md,
   },
   muted: {
     fontFamily: fonts.sans,

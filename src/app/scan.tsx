@@ -10,6 +10,8 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { linkBooking, ApiError } from "@/lib/api";
@@ -25,6 +27,7 @@ function extractToken(data: string): string | null {
 
 export default function ScanScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -41,8 +44,10 @@ export default function ScanScreen() {
     try {
       const result = await linkBooking(token);
       setBooking(result.booking);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       track("qr_scanned", {});
     } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       setError(e instanceof ApiError ? e.message : "連携に失敗しました。時間をおいて再度お試しください。");
     } finally {
       setLinking(false);
@@ -78,7 +83,12 @@ export default function ScanScreen() {
         onBarcodeScanned={scanned ? undefined : handleScanned}
       />
       <View style={styles.overlay}>
-        <View style={styles.frame} />
+        <View style={styles.frame}>
+          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
+        </View>
         {!scanned && <Text style={styles.hint}>受付QRコードを枠内に写してください</Text>}
       </View>
 
@@ -106,7 +116,7 @@ export default function ScanScreen() {
         </View>
       )}
 
-      <View style={styles.closeRow}>
+      <View style={[styles.closeRow, { top: insets.top + spacing.md }]}>
         <GoldButton title="閉じる" variant="secondary" onPress={() => router.back()} />
       </View>
     </View>
@@ -130,6 +140,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.body,
     color: colors.text,
     textAlign: "center",
+    lineHeight: 25,
   },
   permissionButton: {
     minWidth: 220,
@@ -142,9 +153,40 @@ const styles = StyleSheet.create({
   frame: {
     width: FRAME_SIZE,
     height: FRAME_SIZE,
-    borderWidth: 2,
+  },
+  corner: {
+    position: "absolute",
+    width: 36,
+    height: 36,
     borderColor: colors.gold,
-    borderRadius: 12,
+  },
+  cornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 8,
+  },
+  cornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderTopRightRadius: 8,
+  },
+  cornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: 8,
+  },
+  cornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 8,
   },
   hint: {
     marginTop: spacing.lg,
@@ -172,6 +214,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.text,
     textAlign: "center",
+    lineHeight: 20,
   },
   resultSub: {
     fontFamily: fonts.sans,
@@ -187,7 +230,6 @@ const styles = StyleSheet.create({
   },
   closeRow: {
     position: "absolute",
-    top: 60,
     right: spacing.lg,
   },
 });

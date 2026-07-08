@@ -6,6 +6,7 @@
 
 import React from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import * as Haptics from "expo-haptics";
 import { colors, fonts, fontSize, radius } from "@/theme";
 
 interface Props {
@@ -24,6 +25,9 @@ export function GoldButton({ title, onPress, variant = "primary", disabled, load
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={() => {
+        if (!isDisabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }}
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
@@ -68,7 +72,8 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   text: {
     fontFamily: fonts.sansMedium,

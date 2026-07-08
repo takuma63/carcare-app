@@ -36,7 +36,9 @@ function LoadingView() {
 function RootNavigator() {
   const { token, isLoading } = useAuth();
   const router = useRouter();
-  const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
+  const [toast, setToast] = useState<{ title: string; body: string; bookingId?: string; couponId?: string } | null>(
+    null
+  );
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 起動時（トークンが確定した時点）でプッシュ登録を再実行する
@@ -45,16 +47,29 @@ function RootNavigator() {
     if (token) registerForPushNotifications();
   }, [token]);
 
-  // フォアグラウンド受信：アプリ内トースト表示（SPEC.md §4.3）
+  // フォアグラウンド受信：アプリ内トースト表示（SPEC.md §4.3）。タップで該当画面へ
   useEffect(() => {
     const sub = Notifications.addNotificationReceivedListener((notification) => {
       const content = notification.request.content;
+      const data = content.data as { booking_id?: string; coupon_id?: string } | undefined;
       if (toastTimer.current) clearTimeout(toastTimer.current);
-      setToast({ title: content.title ?? "カーケアセンター", body: content.body ?? "" });
-      toastTimer.current = setTimeout(() => setToast(null), 4000);
+      setToast({
+        title: content.title ?? "カーケアセンター",
+        body: content.body ?? "",
+        bookingId: data?.booking_id,
+        couponId: data?.coupon_id,
+      });
+      toastTimer.current = setTimeout(() => setToast(null), 5000);
     });
     return () => sub.remove();
   }, []);
+
+  const handleToastPress = () => {
+    if (!toast) return;
+    if (toast.bookingId) router.push(`/bookings/${toast.bookingId}`);
+    else if (toast.couponId) router.push("/coupons");
+    setToast(null);
+  };
 
   // 通知タップ：booking_idがあればS9へ、coupon_idがあればS10へ deep link（SPEC.md §4.3）
   useEffect(() => {
@@ -77,7 +92,13 @@ function RootNavigator() {
 
   return (
     <>
-      {toast && <Toast title={toast.title} body={toast.body} />}
+      {toast && (
+        <Toast
+          title={toast.title}
+          body={toast.body}
+          onPress={toast.bookingId || toast.couponId ? handleToastPress : undefined}
+        />
+      )}
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!!token}>
           <Stack.Screen name="(tabs)" />
