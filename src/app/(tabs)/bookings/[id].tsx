@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   totalPrice: {
-    fontFamily: fonts.sansMedium,
+    fontFamily: fonts.serifEn,
     fontSize: fontSize.h3,
-    color: colors.gold,
+    color: colors.text,
   },
 });

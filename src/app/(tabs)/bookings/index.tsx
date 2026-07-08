@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   price: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.body,
-    color: colors.gold,
+    fontFamily: fonts.serifEn,
+    fontSize: fontSize.bodyLarge,
+    color: colors.text,
   },
 });

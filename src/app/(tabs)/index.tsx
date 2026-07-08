@@ -1,9 +1,9 @@
 /* ============================================================
    (tabs)/index.tsx  ―  S2 ホーム（SPEC.md §4.2）
    ------------------------------------------------------------
-   ヒーローカード → 進行中の予約 → 店舗一覧、の順に表示。
-   「予約する」は Phase 3 で /reserve（S3〜S7）へ、
-   「受付QRをスキャン」は Phase 4 で /scan（S12）へ接続済み。
+   挨拶 → 予約カード（作業中のときはヒーローより上に最優先表示。
+   完了通知の待ち受けがこのアプリの核のため）→ ヒーロー → 店舗一覧。
+   「予約する」は /reserve（S3〜S7）、「受付QRをスキャン」は /scan（S12）へ。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
@@ -23,6 +23,7 @@ import { Card } from "@/components/Card";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchMyBookings } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
@@ -39,6 +40,7 @@ const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { customer } = useAuth();
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -71,6 +73,22 @@ export default function HomeScreen() {
     router.push("/scan");
   };
 
+  const isWorking = activeBooking?.status === "in_progress";
+
+  const bookingCard = activeBooking && (
+    <TouchableOpacity onPress={() => router.push(`/bookings/${activeBooking.id}`)}>
+      <Card style={[styles.bookingCard, isWorking && styles.bookingCardWorking]}>
+        <View style={styles.bookingHeader}>
+          <Text style={styles.bookingLabel}>{isWorking ? "作業中のご予約" : "ご予約中"}</Text>
+          <StatusBadge status={activeBooking.status} />
+        </View>
+        <Text style={styles.bookingMenu}>{primaryMenuName(activeBooking)}</Text>
+        <Text style={styles.bookingSub}>{activeBooking.shop ?? "店舗未定"}</Text>
+        {isWorking && <Text style={styles.bookingNotice}>作業中です。完了したら通知でお知らせします。</Text>}
+      </Card>
+    </TouchableOpacity>
+  );
+
   return (
     <ScrollView
       style={styles.flex}
@@ -78,6 +96,11 @@ export default function HomeScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold} />}
     >
       <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
+
+      {customer?.name ? <Text style={styles.greeting}>{customer.name} 様</Text> : null}
+
+      {/* 作業中は「いま何が起きているか」が最重要情報なので、ヒーローより上に出す */}
+      {isWorking && bookingCard}
 
       <View style={styles.hero}>
         <Image source={require("@/assets/hero.jpg")} style={styles.heroImage} resizeMode="cover" />
@@ -93,31 +116,24 @@ export default function HomeScreen() {
         <Text style={styles.scanButtonText}>受付QRをスキャン</Text>
       </TouchableOpacity>
 
-      {activeBooking && (
-        <TouchableOpacity onPress={() => router.push(`/bookings/${activeBooking.id}`)}>
-          <Card style={styles.bookingCard}>
-            <View style={styles.bookingHeader}>
-              <Text style={styles.bookingLabel}>ご予約中</Text>
-              <StatusBadge status={activeBooking.status} />
-            </View>
-            <Text style={styles.bookingMenu}>{primaryMenuName(activeBooking)}</Text>
-            <Text style={styles.bookingSub}>{activeBooking.shop ?? "店舗未定"}</Text>
-            {activeBooking.status === "in_progress" && (
-              <Text style={styles.bookingNotice}>作業中です。完了したら通知でお知らせします。</Text>
-            )}
-          </Card>
-        </TouchableOpacity>
-      )}
+      {!isWorking && bookingCard}
 
       <Text style={styles.sectionTitle}>店舗一覧</Text>
+      <Text style={styles.sectionSub}>営業時間 10:00〜19:00（平日・土日祝）</Text>
       <View style={styles.storeList}>
         {STORES.map((store) => (
-          <View key={store.name} style={styles.storeRow}>
+          <TouchableOpacity
+            key={store.name}
+            style={styles.storeRow}
+            onPress={() => Linking.openURL(`tel:${store.tel}`)}
+            accessibilityLabel={`${store.name}に電話する`}
+          >
             <Text style={styles.storeName}>{store.name}</Text>
-            <TouchableOpacity onPress={() => Linking.openURL(`tel:${store.tel}`)}>
+            <View style={styles.storeTelWrap}>
+              <Feather name="phone" size={13} color={colors.goldDeep} />
               <Text style={styles.storeTel}>{store.telLabel}</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
         ))}
       </View>
     </ScrollView>
@@ -146,6 +162,13 @@ const styles = StyleSheet.create({
     height: 48,
     alignSelf: "center",
     marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  greeting: {
+    fontFamily: fonts.serifJp,
+    fontSize: fontSize.body,
+    color: colors.text,
+    marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
   hero: {
@@ -207,6 +230,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginHorizontal: spacing.lg,
   },
+  bookingCardWorking: {
+    marginTop: 0,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
   bookingHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -242,8 +271,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.h3,
     color: colors.text,
     marginTop: spacing.xl,
-    marginBottom: spacing.md,
+    marginBottom: 2,
     marginHorizontal: spacing.lg,
+  },
+  sectionSub: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
   storeList: {
     marginHorizontal: spacing.lg,
@@ -253,6 +289,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    minHeight: 48,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -261,6 +298,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.text,
+  },
+  storeTelWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   storeTel: {
     fontFamily: fonts.serifEn,

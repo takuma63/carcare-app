@@ -78,7 +78,11 @@ export default function MenuSelectScreen() {
               {item.note ? <Text style={styles.itemNote}> {item.note}</Text> : null}
             </Text>
           </View>
-          <Text style={styles.itemPrice}>{renderPriceLabel(item)}</Text>
+          {(() => {
+            const label = renderPriceLabel(item);
+            // 金額はセリフ体の墨色で「値札」らしく。文字ラベル（要お見積り等）は控えめに
+            return <Text style={label.startsWith("¥") ? styles.itemPrice : styles.itemPriceNote}>{label}</Text>;
+          })()}
         </TouchableOpacity>
 
         {isSelected && item.priceType === "options" && item.options && (
@@ -295,9 +299,14 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   itemPrice: {
+    fontFamily: fonts.serifEn,
+    fontSize: fontSize.body,
+    color: colors.text,
+  },
+  itemPriceNote: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
-    color: colors.goldDeep,
+    color: colors.textLight,
   },
   optionRow: {
     flexDirection: "row",
