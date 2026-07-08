@@ -11,6 +11,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
@@ -141,6 +142,7 @@ export default function MenuSelectScreen() {
 
   return (
     <View style={styles.flex}>
+      <ReserveHeader />
       <ScrollView contentContainerStyle={styles.content}>
         <StepIndicator current={2} />
         <Text style={styles.heading}>メニューを選択</Text>
@@ -171,7 +173,7 @@ export default function MenuSelectScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   heading: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h2,
@@ -233,7 +235,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
-    color: colors.gold,
+    color: colors.goldDeep,
   },
   optionRow: {
     flexDirection: "row",
@@ -267,9 +269,9 @@ const styles = StyleSheet.create({
     marginLeft: 32,
   },
   qtyBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",

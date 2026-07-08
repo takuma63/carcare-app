@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifEn,
     fontSize: fontSize.caption,
     letterSpacing: 1,
-    color: colors.gold,
+    color: colors.goldDeep,
   },
 });

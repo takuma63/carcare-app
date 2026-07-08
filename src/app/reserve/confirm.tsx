@@ -7,10 +7,19 @@
 ============================================================ */
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useReservation } from "@/lib/reservation-context";
@@ -64,8 +73,10 @@ export default function ConfirmScreen() {
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <StepIndicator current={4} />
+      <ReserveHeader />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <StepIndicator current={4} />
         <Text style={styles.heading}>ご予約内容の確認</Text>
 
         <Card style={styles.card}>
@@ -135,18 +146,19 @@ export default function ConfirmScreen() {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
 
-      <View style={styles.bottomBar}>
-        <GoldButton title="予約を確定する" onPress={handleSubmit} loading={submitting} />
-      </View>
+        <View style={styles.bottomBar}>
+          <GoldButton title="予約を確定する" onPress={handleSubmit} loading={submitting} />
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   heading: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h2,

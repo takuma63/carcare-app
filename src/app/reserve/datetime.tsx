@@ -12,6 +12,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
 import { fetchSlots } from "@/lib/api";
@@ -88,6 +89,7 @@ export default function DateTimeScreen() {
 
   return (
     <View style={styles.flex}>
+      <ReserveHeader />
       <ScrollView contentContainerStyle={styles.content}>
         <StepIndicator current={3} />
         <Text style={styles.heading}>店舗・日時を選択</Text>
@@ -180,7 +182,7 @@ export default function DateTimeScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   heading: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h2,
@@ -277,8 +279,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   timeChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius,

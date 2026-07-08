@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifEn,
     fontSize: 12,
     letterSpacing: 1,
-    color: colors.gold,
+    color: colors.goldDeep,
     textTransform: "uppercase",
   },
   bookingMenu: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
-    color: colors.gold,
+    color: colors.goldDeep,
   },
   sectionTitle: {
     fontFamily: fonts.serifJp,
@@ -265,6 +265,6 @@ const styles = StyleSheet.create({
   storeTel: {
     fontFamily: fonts.serifEn,
     fontSize: fontSize.caption,
-    color: colors.gold,
+    color: colors.goldDeep,
   },
 });

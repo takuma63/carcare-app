@@ -6,9 +6,20 @@
 ============================================================ */
 
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useReservation } from "@/lib/reservation-context";
@@ -88,23 +99,32 @@ export default function CarInputScreen() {
 
   if (menuLoading && !menu) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.gold} size="large" />
+      <View style={styles.flex}>
+        <ReserveHeader showBack={false} />
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.gold} size="large" />
+        </View>
       </View>
     );
   }
 
   if (menuError && !menu) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{menuError}</Text>
-        <GoldButton title="再読み込み" onPress={loadMenu} style={styles.retryButton} />
+      <View style={styles.flex}>
+        <ReserveHeader showBack={false} />
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{menuError}</Text>
+          <GoldButton title="再読み込み" onPress={loadMenu} style={styles.retryButton} />
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={styles.flex}>
+      <ReserveHeader showBack={false} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <StepIndicator current={1} />
 
       <Text style={styles.heading}>お車の車種を{"\n"}教えてください</Text>
@@ -158,14 +178,16 @@ export default function CarInputScreen() {
         ))}
       </View>
 
-      <GoldButton title="次へ" onPress={handleNext} disabled={!category} style={styles.nextButton} />
-    </ScrollView>
+          <GoldButton title="次へ" onPress={handleNext} disabled={!category} style={styles.nextButton} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   center: {
     flex: 1,
     alignItems: "center",
