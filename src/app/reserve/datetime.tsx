@@ -119,9 +119,12 @@ export default function DateTimeScreen() {
           <>
             <Text style={styles.sectionLabel}>ご希望日</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
-              {dateOptions.map((d) => {
+              {dateOptions.map((d, idx) => {
                 const key = toDateKey(d);
                 const active = preferredDate === key;
+                // 月跨ぎで迷わないよう「今日」「明日」、月初と先頭チップには「◯月」を添える
+                const topLabel =
+                  idx === 0 ? "今日" : idx === 1 ? "明日" : d.getDate() === 1 || idx === 2 ? `${d.getMonth() + 1}月` : "";
                 return (
                   <TouchableOpacity
                     key={key}
@@ -131,8 +134,17 @@ export default function DateTimeScreen() {
                       setPreferredTime(null);
                     }}
                   >
+                    <Text style={[styles.dateChipTop, active && styles.dateChipTextOn]}>{topLabel || " "}</Text>
                     <Text style={[styles.dateChipDay, active && styles.dateChipTextOn]}>{d.getDate()}</Text>
-                    <Text style={[styles.dateChipWd, active && styles.dateChipTextOn]}>{WEEKDAY[d.getDay()]}</Text>
+                    <Text
+                      style={[
+                        styles.dateChipWd,
+                        d.getDay() === 0 && styles.dateChipSun,
+                        active && styles.dateChipTextOn,
+                      ]}
+                    >
+                      {WEEKDAY[d.getDay()]}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -248,8 +260,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   dateChip: {
-    width: 48,
-    paddingVertical: 10,
+    width: 56,
+    paddingVertical: 8,
     alignItems: "center",
     borderWidth: 1,
     borderColor: colors.border,
@@ -258,6 +270,12 @@ const styles = StyleSheet.create({
   dateChipOn: {
     backgroundColor: colors.gold,
     borderColor: colors.gold,
+  },
+  dateChipTop: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 10,
+    color: colors.goldDeep,
+    marginBottom: 2,
   },
   dateChipDay: {
     fontFamily: fonts.serifEn,
@@ -269,6 +287,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textLight,
     marginTop: 2,
+  },
+  dateChipSun: {
+    color: colors.danger,
   },
   dateChipTextOn: {
     color: colors.white,

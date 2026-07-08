@@ -19,8 +19,10 @@ import type { MenuGroup, MenuItem } from "@/lib/types";
 
 /* オンライン予約では扱わないグループ（法人向け・要見積りのみ。reserve.jsのEXCLUDED_GROUP_IDSと同一） */
 const EXCLUDED_GROUP_IDS = ["mobile-wash"];
-/* メインメニューは常時展開（reserve.jsのMAIN_GROUP_IDSと同一） */
-const MAIN_GROUP_IDS = ["wash", "wash-special", "wash-wax", "coating-feynlab", "coating-gzox", "coating-other"];
+/* メインメニューは「手洗い洗車」「コーティング」の2タブに分ける（Web版reserve.jsと同じ構成） */
+const WASH_GROUP_IDS = ["wash", "wash-special", "wash-wax"];
+const COATING_GROUP_IDS = ["coating-feynlab", "coating-gzox", "coating-other"];
+const MAIN_GROUP_IDS = [...WASH_GROUP_IDS, ...COATING_GROUP_IDS];
 
 function yen(n: number): string {
   return `¥${n.toLocaleString("ja-JP")}`;
@@ -30,10 +32,17 @@ export default function MenuSelectScreen() {
   const router = useRouter();
   const { menu, category, selections, toggleItem, setOptionIndex, setQty, summary } = useReservation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"wash" | "coating">("wash");
 
   const groups = (menu?.groups ?? []).filter((g) => !EXCLUDED_GROUP_IDS.includes(g.id));
-  const mainGroups = groups.filter((g) => MAIN_GROUP_IDS.includes(g.id));
+  const tabGroupIds = activeTab === "wash" ? WASH_GROUP_IDS : COATING_GROUP_IDS;
+  const mainGroups = groups.filter((g) => tabGroupIds.includes(g.id));
   const subGroups = groups.filter((g) => !MAIN_GROUP_IDS.includes(g.id));
+
+  /* 別タブでの選択を見失わないよう、選択済みメニューがあるタブに金のドットを付ける（Web版と同じ） */
+  const hasSelectionIn = (ids: string[]) =>
+    groups.some((g) => ids.includes(g.id) && g.items.some((it) => !!selections[it.id]));
+  const selectionCount = Object.keys(selections).length;
 
   const toggleOpen = (groupId: string) => {
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -147,6 +156,24 @@ export default function MenuSelectScreen() {
         <StepIndicator current={2} />
         <Text style={styles.heading}>メニューを選択</Text>
 
+        <View style={styles.tabRow}>
+          {(
+            [
+              { key: "wash", label: "手洗い洗車", ids: WASH_GROUP_IDS },
+              { key: "coating", label: "コーティング", ids: COATING_GROUP_IDS },
+            ] as const
+          ).map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabOn]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextOn]}>{tab.label}</Text>
+              {hasSelectionIn([...tab.ids]) && <View style={styles.tabDot} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {mainGroups.map(renderGroup)}
 
         <Text style={styles.optionsLabel}>オプション（複数選択可）</Text>
@@ -158,7 +185,9 @@ export default function MenuSelectScreen() {
           <Text style={styles.bottomBarPrice}>
             {summary.total > 0 ? yen(summary.total) + (summary.hasQuote ? " ＋ 要見積り" : "") : summary.hasQuote ? "要見積り" : "¥0"}
           </Text>
-          <Text style={styles.bottomBarTime}>作業時間目安：{summary.durationText}</Text>
+          <Text style={styles.bottomBarTime}>
+            {selectionCount > 0 ? `${selectionCount}件選択中　` : ""}作業時間目安：{summary.durationText}
+          </Text>
         </View>
         <GoldButton
           title="次へ"
@@ -179,6 +208,39 @@ const styles = StyleSheet.create({
     fontSize: fontSize.h2,
     color: colors.text,
     marginTop: spacing.sm,
+  },
+  tabRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    marginBottom: -1,
+  },
+  tabOn: {
+    borderBottomColor: colors.gold,
+  },
+  tabText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.textLight,
+  },
+  tabTextOn: {
+    color: colors.text,
+  },
+  tabDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.gold,
   },
   groupBlock: {
     gap: spacing.xs,

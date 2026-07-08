@@ -49,7 +49,6 @@ export default function CarInputScreen() {
   } = useReservation();
 
   const [judging, setJudging] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastJudgedRef = useRef("");
 
   useEffect(() => {
@@ -80,16 +79,15 @@ export default function CarInputScreen() {
     }
   };
 
-  const handleChangeText = (text: string) => {
-    setCarInput(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const trimmed = text.trim();
+  /* 判定は入力確定時（キーボードの完了／フォーカスが外れた時）に1回だけ走らせる。
+     入力中の自動判定は「判定中…」のチラつきと誤判定のもとになるためやめた */
+  const handleJudge = () => {
+    const trimmed = carInput.trim();
     if (trimmed.length < 2) return;
-    debounceRef.current = setTimeout(() => runJudge(trimmed), 900);
+    runJudge(trimmed);
   };
 
   const handleManualCategory = (cat: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     applyManualCategory(cat);
   };
 
@@ -131,27 +129,28 @@ export default function CarInputScreen() {
 
       <TextInput
         value={carInput}
-        onChangeText={handleChangeText}
+        onChangeText={setCarInput}
         placeholder="例：プリウス、BMW X5"
         placeholderTextColor={colors.textLight}
         style={styles.input}
-        onSubmitEditing={() => runJudge(carInput.trim())}
+        onSubmitEditing={handleJudge}
+        onBlur={handleJudge}
         returnKeyType="done"
       />
 
       {judging && (
         <View style={styles.judgingRow}>
           <ActivityIndicator color={colors.gold} size="small" />
-          <Text style={styles.judgingText}>判定中…</Text>
+          <Text style={styles.judgingText}>お車のサイズを判定しています…</Text>
         </View>
       )}
 
       {!judging && category && (
         <Card style={styles.resultCard}>
-          <Text style={styles.resultTag}>AI</Text>
-          <Text style={styles.resultText}>
-            <Text style={styles.resultStrong}>{official || carInput}</Text> →{" "}
-            <Text style={styles.resultStrong}>{menu?.categories[category] ?? category}</Text> と判定しました
+          {official ? <Text style={styles.resultTag}>AI判定</Text> : null}
+          <Text style={styles.resultName}>{official || carInput || "お車"}</Text>
+          <Text style={styles.resultCategory}>
+            {menu?.categories[category] ?? category}
             {confidence === "low" ? "（推定）" : ""}
           </Text>
           <Text style={styles.resultHint}>違う場合は下のボタンで修正できます。</Text>
@@ -232,33 +231,34 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     gap: 4,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.gold,
   },
   resultTag: {
-    alignSelf: "flex-start",
     fontFamily: fonts.serifEn,
     fontSize: 11,
-    letterSpacing: 1,
-    color: colors.white,
-    backgroundColor: colors.gold,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 2,
-    marginBottom: 4,
+    letterSpacing: 1.5,
+    color: colors.goldDeep,
+    textTransform: "uppercase",
   },
-  resultText: {
-    fontFamily: fonts.sans,
+  resultName: {
+    fontFamily: fonts.serifJp,
+    fontSize: fontSize.h3,
+    color: colors.text,
+    textAlign: "center",
+    lineHeight: 30,
+  },
+  resultCategory: {
+    fontFamily: fonts.sansMedium,
     fontSize: fontSize.body,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  resultStrong: {
-    fontFamily: fonts.sansBold,
-    color: colors.text,
+    color: colors.goldDeep,
   },
   resultHint: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
+    marginTop: 4,
   },
   noteText: {
     fontFamily: fonts.sans,
