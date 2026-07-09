@@ -86,11 +86,11 @@ export default function HomeScreen() {
       >
         {/* 01 フルブリードヒーロー */}
         <View style={styles.hero}>
-          <Image source={require("@/assets/hero.jpg")} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={require("@/assets/hero.jpg")} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient
             colors={["rgba(0,0,0,0.34)", "rgba(0,0,0,0.04)", "rgba(12,12,12,0.82)"]}
             locations={[0, 0.42, 1]}
-            style={StyleSheet.absoluteFill}
+            style={styles.heroImage}
           />
           <Image
             source={require("@/assets/logo.png")}
@@ -99,7 +99,7 @@ export default function HomeScreen() {
           />
           <View style={styles.heroCopy}>
             <Text style={styles.heroTagline}>Membership Car Wash Lounge</Text>
-            <Text style={styles.heroTitle}>究極の「彩」を{"\n"}創造する</Text>
+            <Text style={styles.heroTitle}>光を纏う、{"\n"}究極の仕上がり</Text>
           </View>
         </View>
 
@@ -186,6 +186,18 @@ const styles = StyleSheet.create({
   hero: {
     height: HERO_HEIGHT,
     backgroundColor: colors.dark,
+    overflow: "hidden",
+  },
+  /* StyleSheet.absoluteFillの直接指定だと画像がヒーロー枠を突き抜けて
+     下のセクションまで描画される事象が実機で出たため、明示指定にしている */
+  heroImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
   },
   heroLogo: {
     position: "absolute",
