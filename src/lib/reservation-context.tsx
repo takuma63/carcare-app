@@ -98,7 +98,9 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
 
   const groups: MenuGroup[] = menu?.groups ?? [];
 
-  /* single:true のグループ内は排他選択（既存Webと同じルール。reserve.jsのonItemChange相当） */
+  /* メインメニュー（single:trueのグループ）は、グループをまたいで全体で1つだけ
+     選択できる（reserve.jsのonItemChangeと同一ルール：洗車パックとコーティングは
+     同時に選べない）。オプション系グループ（single無し）は複数選択可 */
   const toggleItem = useCallback(
     (item: { id: string; priceType: string }, groupId: string | null) => {
       setSelections((prev) => {
@@ -108,13 +110,14 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
           delete next[item.id];
           return next;
         }
-        if (groupId) {
-          const group = groups.find((g) => g.id === groupId);
-          if (group?.single) {
-            group.items.forEach((it) => {
+        const group = groupId ? groups.find((g) => g.id === groupId) : null;
+        if (group?.single) {
+          groups.forEach((g) => {
+            if (!g.single) return;
+            g.items.forEach((it) => {
               delete next[it.id];
             });
-          }
+          });
         }
         const initial: Selection = {};
         if (item.priceType === "options") {
