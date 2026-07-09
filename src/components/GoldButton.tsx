@@ -7,6 +7,7 @@
 import React from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import * as Haptics from "expo-haptics";
+import { Feather } from "@expo/vector-icons";
 import { colors, fonts, fontSize, radius } from "@/theme";
 
 interface Props {
@@ -15,10 +16,11 @@ interface Props {
   variant?: "primary" | "secondary";
   disabled?: boolean;
   loading?: boolean;
+  icon?: React.ComponentProps<typeof Feather>["name"];
   style?: StyleProp<ViewStyle>;
 }
 
-export function GoldButton({ title, onPress, variant = "primary", disabled, loading, style }: Props) {
+export function GoldButton({ title, onPress, variant = "primary", disabled, loading, icon, style }: Props) {
   const isPrimary = variant === "primary";
   const isDisabled = disabled || loading;
 
@@ -40,7 +42,10 @@ export function GoldButton({ title, onPress, variant = "primary", disabled, load
       {loading ? (
         <ActivityIndicator color={isPrimary ? colors.white : colors.gold} />
       ) : (
-        <Text style={[styles.text, isPrimary ? styles.textPrimary : styles.textSecondary]}>{title}</Text>
+        <View style={styles.inner}>
+          {icon && <Feather name={icon} size={17} color={isPrimary ? colors.white : colors.text} />}
+          <Text style={[styles.text, isPrimary ? styles.textPrimary : styles.textSecondary]}>{title}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -63,6 +68,11 @@ const styles = StyleSheet.create({
   primary: {
     backgroundColor: colors.gold,
     borderColor: colors.gold,
+    shadowColor: colors.gold,
+    shadowOpacity: 0.32,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
   },
   secondary: {
     backgroundColor: colors.white,
@@ -74,6 +84,11 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
+  },
+  inner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   text: {
     fontFamily: fonts.sansMedium,

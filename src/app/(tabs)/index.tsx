@@ -1,9 +1,11 @@
 /* ============================================================
    (tabs)/index.tsx  ―  S2 ホーム（SPEC.md §4.2）
    ------------------------------------------------------------
-   挨拶 → 予約カード（作業中のときはヒーローより上に最優先表示。
-   完了通知の待ち受けがこのアプリの核のため）→ ヒーロー → 店舗一覧。
-   「予約する」は /reserve（S3〜S7）、「受付QRをスキャン」は /scan（S12）へ。
+   デザイン提案01〜04・06適用済みの構成：
+   フルブリードヒーロー（白抜きロゴ＋グラデーション＋左下コピー）
+   → WELCOME挨拶 → クイックアクション2ボタン → 予約チケットカード
+   → 店舗一覧（淡灰の帯＋白カード行）。
+   「予約する」は /reserve（S3〜S7）、「受付QR」は /scan（S12）へ。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
@@ -18,14 +20,17 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Card } from "@/components/Card";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchMyBookings } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
-import { colors, fonts, fontSize, radius, spacing } from "@/theme";
+import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
 
 const STORES = [
@@ -37,9 +42,12 @@ const STORES = [
 ];
 
 const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
+const HERO_HEIGHT = 360;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const { customer } = useAuth();
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,78 +73,98 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const handleReserve = () => {
-    router.push("/reserve");
-  };
-
-  const handleScan = () => {
-    router.push("/scan");
-  };
-
   const isWorking = activeBooking?.status === "in_progress";
 
-  const bookingCard = activeBooking && (
-    <TouchableOpacity onPress={() => router.push(`/bookings/${activeBooking.id}`)}>
-      <Card style={[styles.bookingCard, isWorking && styles.bookingCardWorking]}>
-        <View style={styles.bookingHeader}>
-          <Text style={styles.bookingLabel}>{isWorking ? "作業中のご予約" : "ご予約中"}</Text>
-          <StatusBadge status={activeBooking.status} />
-        </View>
-        <Text style={styles.bookingMenu}>{primaryMenuName(activeBooking)}</Text>
-        <Text style={styles.bookingSub}>{activeBooking.shop ?? "店舗未定"}</Text>
-        {isWorking && <Text style={styles.bookingNotice}>作業中です。完了したら通知でお知らせします。</Text>}
-      </Card>
-    </TouchableOpacity>
-  );
-
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.gold} />}
-    >
-      <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
-
-      {customer?.name ? <Text style={styles.greeting}>{customer.name} 様</Text> : null}
-
-      {/* 作業中は「いま何が起きているか」が最重要情報なので、ヒーローより上に出す */}
-      {isWorking && bookingCard}
-
-      <View style={styles.hero}>
-        <Image source={require("@/assets/hero.jpg")} style={styles.heroImage} resizeMode="cover" />
-        <View style={styles.heroOverlay} />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>究極の「彩」を{"\n"}創造する</Text>
-          <GoldButton title="予約する" onPress={handleReserve} style={styles.heroButton} />
+    <View style={styles.flex}>
+      {/* ヒーローが暗いので、ホーム表示中だけステータスバーを白文字に */}
+      {isFocused && <StatusBar style="light" />}
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.white} />}
+      >
+        {/* 01 フルブリードヒーロー */}
+        <View style={styles.hero}>
+          <Image source={require("@/assets/hero.jpg")} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <LinearGradient
+            colors={["rgba(0,0,0,0.34)", "rgba(0,0,0,0.04)", "rgba(12,12,12,0.82)"]}
+            locations={[0, 0.42, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <Image
+            source={require("@/assets/logo.png")}
+            style={[styles.heroLogo, { top: insets.top + 10 }]}
+            resizeMode="contain"
+          />
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroTagline}>Membership Car Wash Lounge</Text>
+            <Text style={styles.heroTitle}>究極の「彩」を{"\n"}創造する</Text>
+          </View>
         </View>
-      </View>
 
-      <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
-        <Feather name="camera" size={18} color={colors.text} />
-        <Text style={styles.scanButtonText}>受付QRをスキャン</Text>
-      </TouchableOpacity>
+        {/* 03 挨拶（アイブロウ構造） */}
+        {customer?.name ? (
+          <View style={styles.greet}>
+            <Text style={styles.greetEyebrow}>Welcome</Text>
+            <Text style={styles.greetName}>{customer.name} 様</Text>
+          </View>
+        ) : null}
 
-      {!isWorking && bookingCard}
+        {/* 02 クイックアクション */}
+        <View style={styles.actions}>
+          <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
+          <GoldButton
+            title="受付QR"
+            icon="camera"
+            variant="secondary"
+            onPress={() => router.push("/scan")}
+            style={styles.actionSub}
+          />
+        </View>
 
-      <Text style={styles.sectionTitle}>店舗一覧</Text>
-      <Text style={styles.sectionSub}>営業時間 10:00〜19:00（平日・土日祝）</Text>
-      <View style={styles.storeList}>
-        {STORES.map((store) => (
-          <TouchableOpacity
-            key={store.name}
-            style={styles.storeRow}
-            onPress={() => Linking.openURL(`tel:${store.tel}`)}
-            accessibilityLabel={`${store.name}に電話する`}
-          >
-            <Text style={styles.storeName}>{store.name}</Text>
-            <View style={styles.storeTelWrap}>
-              <Feather name="phone" size={13} color={colors.goldDeep} />
-              <Text style={styles.storeTel}>{store.telLabel}</Text>
+        {/* 06 予約チケットカード（S7完了画面と同じ意匠） */}
+        {activeBooking && (
+          <TouchableOpacity onPress={() => router.push(`/bookings/${activeBooking.id}`)} activeOpacity={0.85}>
+            <View style={[styles.ticket, isWorking && styles.ticketWorking]}>
+              <View style={styles.ticketTop}>
+                <Text style={styles.ticketNo}>
+                  RECEPTION ･ {activeBooking.public_token.slice(0, 8).toUpperCase()}
+                </Text>
+                <StatusBadge status={activeBooking.status} />
+              </View>
+              <View style={styles.ticketDash} />
+              <Text style={styles.ticketMenu}>{primaryMenuName(activeBooking)}</Text>
+              <Text style={styles.ticketSub}>{activeBooking.shop ?? "店舗未定"}</Text>
+              {isWorking && (
+                <Text style={styles.ticketNotice}>作業中です。完了したら通知でお知らせします。</Text>
+              )}
             </View>
           </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+        )}
+
+        {/* 04 店舗一覧（淡灰の帯＋白カード行） */}
+        <View style={styles.stores}>
+          <Text style={styles.storesEyebrow}>Our Stores</Text>
+          <Text style={styles.storesTitle}>店舗一覧</Text>
+          <Text style={styles.storesHours}>営業時間 10:00〜19:00（平日・土日祝）</Text>
+          {STORES.map((store) => (
+            <TouchableOpacity
+              key={store.name}
+              style={styles.storeCard}
+              onPress={() => Linking.openURL(`tel:${store.tel}`)}
+              accessibilityLabel={`${store.name}に電話する`}
+            >
+              <Text style={styles.storeName}>{store.name}</Text>
+              <View style={styles.storeTelWrap}>
+                <Feather name="phone" size={13} color={colors.goldDeep} />
+                <Text style={styles.storeTel}>{store.telLabel}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -147,153 +175,164 @@ function primaryMenuName(booking: Booking): string {
   return rest > 0 ? `${first.name} 他${rest}件` : first.name;
 }
 
-const HERO_HEIGHT = 220;
-
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
     backgroundColor: colors.bg,
   },
   content: {
-    paddingBottom: spacing.xxl,
-  },
-  logo: {
-    width: 120,
-    height: 48,
-    alignSelf: "center",
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  greeting: {
-    fontFamily: fonts.serifJp,
-    fontSize: fontSize.body,
-    color: colors.text,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    paddingBottom: spacing.xl,
   },
   hero: {
     height: HERO_HEIGHT,
-    marginHorizontal: spacing.lg,
-    borderRadius: radius,
-    overflow: "hidden",
+    backgroundColor: colors.dark,
   },
-  heroImage: {
+  heroLogo: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    alignSelf: "center",
+    width: 132,
+    height: 32,
+    tintColor: colors.white,
+    opacity: 0.96,
   },
-  heroOverlay: {
+  heroCopy: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.lg,
   },
-  heroContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: spacing.lg,
+  heroTagline: {
+    fontFamily: fonts.serifEn,
+    fontSize: 11,
+    letterSpacing: 4,
+    color: colors.goldLight,
+    textTransform: "uppercase",
+    marginBottom: spacing.sm,
   },
   heroTitle: {
     fontFamily: fonts.serifJp,
-    fontSize: fontSize.h1,
+    fontSize: 27,
     color: colors.white,
-    textAlign: "center",
-    lineHeight: 38,
-    marginBottom: spacing.md,
-  },
-  heroButton: {
-    minWidth: 160,
-  },
-  scanButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: spacing.md,
-    marginHorizontal: spacing.lg,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius,
-  },
-  scanButtonText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.caption,
-    color: colors.text,
-  },
-  bookingCard: {
-    marginTop: spacing.lg,
-    marginHorizontal: spacing.lg,
-  },
-  bookingCardWorking: {
-    marginTop: 0,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.gold,
-  },
-  bookingHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-  },
-  bookingLabel: {
-    fontFamily: fonts.serifEn,
-    fontSize: 12,
+    lineHeight: 40,
     letterSpacing: 1,
+  },
+  greet: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: 1,
+  },
+  greetEyebrow: {
+    fontFamily: fonts.serifEn,
+    fontSize: 11,
+    letterSpacing: 3,
     color: colors.goldDeep,
     textTransform: "uppercase",
   },
-  bookingMenu: {
+  greetName: {
+    fontFamily: fonts.serifJp,
+    fontSize: fontSize.bodyLarge,
+    color: colors.text,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  actionMain: {
+    flex: 1.4,
+  },
+  actionSub: {
+    flex: 1,
+  },
+  ticket: {
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.white,
+    borderRadius: radius,
+    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    ...shadow,
+  },
+  ticketWorking: {
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  ticketTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  ticketNo: {
+    fontFamily: fonts.serifEn,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    color: colors.goldDeep,
+  },
+  ticketDash: {
+    borderBottomWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    marginVertical: spacing.sm,
+  },
+  ticketMenu: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h3,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  bookingSub: {
+  ticketSub: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
   },
-  bookingNotice: {
+  ticketNotice: {
     marginTop: spacing.sm,
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.goldDeep,
     lineHeight: 20,
   },
-  sectionTitle: {
+  stores: {
+    marginTop: spacing.xl,
+    backgroundColor: colors.bgSub,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  storesEyebrow: {
+    fontFamily: fonts.serifEn,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: colors.goldDeep,
+    textTransform: "uppercase",
+  },
+  storesTitle: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h3,
     color: colors.text,
-    marginTop: spacing.xl,
-    marginBottom: 2,
-    marginHorizontal: spacing.lg,
+    marginTop: 2,
   },
-  sectionSub: {
+  storesHours: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
-    marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
-  storeList: {
-    marginHorizontal: spacing.lg,
-    gap: spacing.xs,
-  },
-  storeRow: {
+  storeCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     minHeight: 48,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.white,
+    borderRadius: radius,
+    paddingVertical: 13,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   storeName: {
     fontFamily: fonts.sans,
