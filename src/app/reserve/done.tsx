@@ -17,8 +17,9 @@ import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 const STATUS_BASE_URL = (Constants.expoConfig?.extra?.STATUS_BASE_URL as string | undefined) ?? "";
 
 export default function BookingDoneScreen() {
-  const { token } = useLocalSearchParams<{ token: string }>();
+  const { token, paid } = useLocalSearchParams<{ token: string; paid?: string }>();
   const router = useRouter();
+  const paidAmount = paid ? parseInt(paid, 10) : null;
 
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -44,6 +45,12 @@ export default function BookingDoneScreen() {
       <View style={styles.ticket}>
         <Text style={styles.ticketLabel}>RECEPTION TICKET</Text>
         <Text style={styles.tokenLabel}>予約番号 {shortToken}</Text>
+        {paidAmount != null && !isNaN(paidAmount) && (
+          <View style={styles.paidBadge}>
+            <Feather name="check-circle" size={14} color={colors.white} />
+            <Text style={styles.paidBadgeText}>お支払い済み ¥{paidAmount.toLocaleString("ja-JP")}</Text>
+          </View>
+        )}
         <View style={styles.dashedLine} />
         <QRCode value={qrValue} size={200} color={colors.text} backgroundColor={colors.white} />
         <View style={styles.dashedLine} />
@@ -108,6 +115,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderStyle: "dashed",
     borderColor: colors.border,
+  },
+  paidBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.success,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+  },
+  paidBadgeText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.white,
   },
   qrHint: {
     fontFamily: fonts.sans,

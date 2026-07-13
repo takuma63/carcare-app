@@ -1,9 +1,11 @@
 /* ============================================================
    reserve/confirm.tsx  ―  S6 確認・クーポン・決済方法（4/4。SPEC.md §4.2）
    ------------------------------------------------------------
-   Phase3時点ではクーポン・事前決済はプレースホルダ（IMPLEMENTATION_PLAN.md
-   Phase3の指示どおり）。店頭払いのみ選択可能で、既存 booking.js に
-   source:"app" + auth_token で直接送信する。
+   決済方法：店頭払い（デフォルト） / 今すぐ決済（Stripe PaymentSheet）。
+   事前決済は payment-intent API → PaymentSheet → 成功後に booking API
+   （payment_intent_id付き）。決済成功後のbooking失敗は自動リトライ3回、
+   それでも失敗なら決済番号を表示して店舗連絡を案内（SPEC §4.2 S6）。
+   クーポンは Phase 6 で追加する。
 ============================================================ */
 
 import React, { useState } from "react";
@@ -14,21 +16,30 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 import { Feather } from "@expo/vector-icons";
+import { useStripe } from "@stripe/stripe-react-native";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useReservation } from "@/lib/reservation-context";
-import { submitBooking, ApiError } from "@/lib/api";
+import { createPaymentIntent, submitBooking, ApiError, type SubmitBookingResult } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+const STRIPE_ENABLED = !!(Constants.expoConfig?.extra?.STRIPE_PUBLISHABLE_KEY as string | undefined);
+
 function yen(n: number): string {
   return `¥${n.toLocaleString("ja-JP")}`;
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function formatDateTime(date: string | null, time: string | null): string {
@@ -40,31 +51,94 @@ function formatDateTime(date: string | null, time: string | null): string {
 
 export default function ConfirmScreen() {
   const router = useRouter();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const { menu, category, shop, preferredDate, preferredTime, note, setNote, summary, buildOrder, reset } =
     useReservation();
 
+  const [payMethod, setPayMethod] = useState<"store" | "online">("store");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const order = buildOrder();
   const categoryLabel = menu?.categories[category] ?? category;
+  // 要見積りのみ（確定金額0円）の予約は事前決済の対象外
+  const onlineAvailable = STRIPE_ENABLED && summary.total > 0;
+
+  const preferredAtIso = () =>
+    preferredDate && preferredTime ? new Date(`${preferredDate}T${preferredTime}:00`).toISOString() : null;
+
+  const bookingParams = (paymentIntentId?: string) => ({
+    order,
+    shop: shop ?? null,
+    preferred_at: preferredAtIso(),
+    note: note.trim() || null,
+    payment_intent_id: paymentIntentId,
+  });
+
+  const finish = (result: SubmitBookingResult, paidAmount: number | null) => {
+    track("booking_completed", { total: order.total_price, paid: paidAmount != null });
+    const token = result.token;
+    reset();
+    router.replace({
+      pathname: "/reserve/done",
+      params: paidAmount != null ? { token, paid: String(paidAmount) } : { token },
+    });
+  };
+
+  /* 店頭払い：booking APIを直接呼ぶ */
+  const submitPayAtStore = async () => {
+    const result = await submitBooking(bookingParams());
+    finish(result, null);
+  };
+
+  /* 今すぐ決済：payment-intent → PaymentSheet → booking（リトライ3回） */
+  const submitPayOnline = async () => {
+    const { client_secret, amount } = await createPaymentIntent(order.items, order.category);
+
+    const init = await initPaymentSheet({
+      paymentIntentClientSecret: client_secret,
+      merchantDisplayName: "カーケアセンター",
+      returnURL: "carcarecenter://stripe-redirect",
+    });
+    if (init.error) {
+      throw new ApiError("決済画面の準備に失敗しました。時間をおいて再度お試しください。");
+    }
+
+    const present = await presentPaymentSheet();
+    if (present.error) {
+      if (present.error.code === "Canceled") return; // ユーザーが決済画面を閉じた（エラー表示しない）
+      throw new ApiError(present.error.localizedMessage || "決済に失敗しました。カード情報をご確認ください。");
+    }
+
+    // 決済成功。以降は予約登録に失敗してもお金は動いているため、自動リトライで救済する
+    const paymentIntentId = client_secret.split("_secret")[0];
+    let lastMessage = "";
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await submitBooking(bookingParams(paymentIntentId));
+        finish(result, amount);
+        return;
+      } catch (e) {
+        lastMessage = e instanceof ApiError ? e.message : "通信エラー";
+        if (attempt < 3) await wait(1500);
+      }
+    }
+    throw new ApiError(
+      `お支払いは完了しましたが、ご予約の登録に失敗しました（${lastMessage}）。\n` +
+        `お手数ですが店舗（06-6267-8288）にご連絡ください。\n決済番号：${paymentIntentId}`
+    );
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      const preferredAt =
-        preferredDate && preferredTime ? new Date(`${preferredDate}T${preferredTime}:00`).toISOString() : null;
-      const result = await submitBooking({
-        order,
-        shop: shop ?? null,
-        preferred_at: preferredAt,
-        note: note.trim() || null,
-      });
-      track("booking_completed", { total: order.total_price, paid: false });
-      const token = result.token;
-      reset();
-      router.replace({ pathname: "/reserve/done", params: { token } });
+      if (payMethod === "online") {
+        await submitPayOnline();
+      } else {
+        await submitPayAtStore();
+      }
+      setSubmitting(false);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "送信に失敗しました。時間をおいて再度お試しください。");
       setSubmitting(false);
@@ -113,19 +187,32 @@ export default function ConfirmScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionLabel}>お支払い方法</Text>
-          <View style={styles.paymentRow}>
-            <View style={[styles.radio, styles.radioOn]}>
-              <View style={styles.radioDot} />
+          <TouchableOpacity style={styles.paymentRow} onPress={() => setPayMethod("store")}>
+            <View style={[styles.radio, payMethod === "store" && styles.radioOn]}>
+              {payMethod === "store" && <View style={styles.radioDot} />}
             </View>
             <Text style={styles.paymentText}>店頭でお支払い</Text>
-          </View>
-          <View style={[styles.paymentRow, styles.paymentDisabled]}>
-            <View style={styles.radio} />
-            <Text style={[styles.paymentText, styles.paymentTextDisabled]}>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.paymentRow, !onlineAvailable && styles.paymentDisabled]}
+            onPress={() => onlineAvailable && setPayMethod("online")}
+            disabled={!onlineAvailable}
+          >
+            <View style={[styles.radio, payMethod === "online" && styles.radioOn]}>
+              {payMethod === "online" && <View style={styles.radioDot} />}
+            </View>
+            <Text style={[styles.paymentText, !onlineAvailable && styles.paymentTextDisabled]}>
               今すぐ決済（クレジットカード / Apple Pay / Google Pay）
             </Text>
-            <Text style={styles.comingSoon}>近日対応</Text>
-          </View>
+            {!onlineAvailable && (
+              <Text style={styles.comingSoon}>{STRIPE_ENABLED ? "店頭払いのみ" : "近日対応"}</Text>
+            )}
+          </TouchableOpacity>
+          {payMethod === "online" && (
+            <Text style={styles.paymentNote}>
+              「予約を確定する」を押すと決済画面が開きます。決済完了と同時にご予約が確定します。
+            </Text>
+          )}
         </Card>
 
         <Card style={styles.card}>
@@ -281,6 +368,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 11,
     color: colors.textLight,
+  },
+  paymentNote: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.goldDeep,
+    lineHeight: 20,
+    marginTop: spacing.xs,
   },
   noteInput: {
     borderWidth: 1,

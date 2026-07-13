@@ -10,7 +10,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
+import { StripeProvider } from "@stripe/stripe-react-native";
 import { useFonts as useCormorantFonts, CormorantGaramond_600SemiBold } from "@expo-google-fonts/cormorant-garamond";
 import { useFonts as useNotoSerifFonts, NotoSerifJP_600SemiBold } from "@expo-google-fonts/noto-serif-jp";
 import {
@@ -24,6 +26,8 @@ import { startAnalytics, track } from "@/lib/analytics";
 import { registerForPushNotifications } from "@/lib/push";
 import { Toast } from "@/components/Toast";
 import { colors } from "@/theme";
+
+const STRIPE_PUBLISHABLE_KEY = (Constants.expoConfig?.extra?.STRIPE_PUBLISHABLE_KEY as string | undefined) ?? "";
 
 function LoadingView() {
   return (
@@ -125,10 +129,23 @@ export default function RootLayout() {
 
   if (!fontsReady) return <LoadingView />;
 
-  return (
+  const app = (
     <AuthProvider>
       <RootNavigator />
     </AuthProvider>
+  );
+
+  // Stripeキーが未設定の間はProviderなしで動かす（S6側で「今すぐ決済」が非活性になる）
+  if (!STRIPE_PUBLISHABLE_KEY) return app;
+
+  return (
+    <StripeProvider
+      publishableKey={STRIPE_PUBLISHABLE_KEY}
+      merchantIdentifier="merchant.jp.co.carcarecenter.app"
+      urlScheme="carcarecenter"
+    >
+      {app}
+    </StripeProvider>
   );
 }
 

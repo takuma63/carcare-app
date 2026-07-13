@@ -180,6 +180,19 @@ export function fetchSlots(shop: string, date: string) {
   return request<SlotsResult>("slots", { body: { shop, date }, auth: false });
 }
 
+/* ---------- payment-intent（事前決済の決済枠を作成。金額はサーバー側で再計算） ---------- */
+export interface PaymentIntentResult {
+  ok: true;
+  client_secret: string;
+  amount: number;
+}
+export function createPaymentIntent(
+  items: { id: string; name: string; option: string | null; price: number | null }[],
+  category: string
+) {
+  return request<PaymentIntentResult>("payment-intent", { body: { items, category } });
+}
+
 /* ---------- booking（既存 booking.js を拡張。auth_token+source:"app"で送信） ---------- */
 export interface SubmitBookingParams {
   order: {
@@ -193,6 +206,7 @@ export interface SubmitBookingParams {
   shop: string | null;
   preferred_at: string | null;
   note: string | null;
+  payment_intent_id?: string;
 }
 export interface SubmitBookingResult {
   ok: true;

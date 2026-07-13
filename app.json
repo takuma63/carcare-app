@@ -50,7 +50,8 @@
     ],
     "extra": {
       "API_BASE": "https://carcare-reservation.netlify.app/.netlify/functions",
-      "STATUS_BASE_URL": "https://carcare-reservation.netlify.app"
+      "STATUS_BASE_URL": "https://carcare-reservation.netlify.app",
+      "STRIPE_PUBLISHABLE_KEY": ""
     }
   }
 }
