@@ -99,6 +99,10 @@ export default function ConfirmScreen() {
       paymentIntentClientSecret: client_secret,
       merchantDisplayName: "カーケアセンター",
       returnURL: "carcarecenter://stripe-redirect",
+      // Apple Pay / Google Pay はEASビルド＋Merchant ID登録後に有効になる
+      // （Expo Goではカード入力のみ表示される）。本番切替時は testEnv を false に
+      applePay: { merchantCountryCode: "JP" },
+      googlePay: { merchantCountryCode: "JP", testEnv: true, currencyCode: "JPY" },
     });
     if (init.error) {
       throw new ApiError("決済画面の準備に失敗しました。時間をおいて再度お試しください。");
