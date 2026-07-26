@@ -114,12 +114,20 @@ export function linkBooking(publicToken: string) {
 }
 
 /* ---------- menu ---------- */
+export interface Nomination {
+  enabled: boolean;
+  shop: string;
+  slotTime: string;
+  fee: number;
+  staffLabel: string;
+}
 export interface MenuResult {
   ok: true;
   groups: MenuGroup[];
   categories: MenuCategories;
   size_guide: string;
   nickname_guide: string;
+  nomination?: Nomination;
 }
 
 const MENU_CACHE_KEY = "ccc_menu_cache";
@@ -188,9 +196,18 @@ export interface PaymentIntentResult {
 }
 export function createPaymentIntent(
   items: { id: string; name: string; option: string | null; price: number | null }[],
-  category: string
+  category: string,
+  nomination?: { nominated: boolean; shop: string | null; slot_time: string | null }
 ) {
-  return request<PaymentIntentResult>("payment-intent", { body: { items, category } });
+  return request<PaymentIntentResult>("payment-intent", {
+    body: {
+      items,
+      category,
+      nominated: nomination?.nominated ?? false,
+      shop: nomination?.shop ?? null,
+      slot_time: nomination?.slot_time ?? null,
+    },
+  });
 }
 
 /* ---------- booking（既存 booking.js を拡張。auth_token+source:"app"で送信） ---------- */
@@ -207,6 +224,7 @@ export interface SubmitBookingParams {
   preferred_at: string | null;
   note: string | null;
   payment_intent_id?: string;
+  nominated?: boolean;
 }
 export interface SubmitBookingResult {
   ok: true;

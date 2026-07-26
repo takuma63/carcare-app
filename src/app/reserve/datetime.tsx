@@ -26,24 +26,32 @@ function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function buildTimeOptions(): string[] {
+function buildTimeOptions(lastMinutes: number): string[] {
   const options: string[] = [];
-  for (let m = 10 * 60; m <= 18 * 60; m += 30) {
+  for (let m = 10 * 60; m <= lastMinutes; m += 30) {
     const hh = String(Math.floor(m / 60)).padStart(2, "0");
     const mm = String(m % 60).padStart(2, "0");
     options.push(`${hh}:${mm}`);
   }
   return options;
 }
-const TIME_OPTIONS = buildTimeOptions();
+
+function yen(n: number): string {
+  return `¥${n.toLocaleString("ja-JP")}`;
+}
 
 export default function DateTimeScreen() {
   const router = useRouter();
-  const { shop, setShop, preferredDate, setPreferredDate, preferredTime, setPreferredTime, skipDateTime, setSkipDateTime } =
+  const { menu, shop, setShop, preferredDate, setPreferredDate, preferredTime, setPreferredTime, skipDateTime, setSkipDateTime } =
     useReservation();
 
   const [booked, setBooked] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // 指名制度：対象店舗では通常枠を17:30までにし、18:00を店長指名専用枠として出す
+  const nom = menu?.nomination?.enabled ? menu.nomination : null;
+  const isNomShop = !!(nom && shop === nom.shop);
+  const timeOptions = useMemo(() => buildTimeOptions(isNomShop ? 17 * 60 + 30 : 18 * 60), [isNomShop]);
 
   const dateOptions = useMemo(() => {
     const today = new Date();
@@ -153,10 +161,10 @@ export default function DateTimeScreen() {
             {preferredDate && (
               <>
                 <Text style={styles.sectionLabel}>
-                  ご希望時間（10:00〜18:00）{loadingSlots ? "　確認中…" : ""}
+                  ご希望時間（10:00〜{isNomShop ? "17:30" : "18:00"}）{loadingSlots ? "　確認中…" : ""}
                 </Text>
                 <View style={styles.timeGrid}>
-                  {TIME_OPTIONS.map((t) => {
+                  {timeOptions.map((t) => {
                     const isBooked = booked.includes(t);
                     const active = preferredTime === t;
                     return (
@@ -179,6 +187,34 @@ export default function DateTimeScreen() {
                     );
                   })}
                 </View>
+
+                {/* 指名専用枠（六本木ヒルズ店・18:00）。選ぶと確認画面で指名料が加算される */}
+                {isNomShop && nom && (
+                  <>
+                    <Text style={styles.sectionLabel}>店長を指名して予約</Text>
+                    {(() => {
+                      const isBooked = booked.includes(nom.slotTime);
+                      const active = preferredTime === nom.slotTime;
+                      return (
+                        <TouchableOpacity
+                          disabled={isBooked}
+                          style={[styles.nomChip, active && styles.nomChipOn, isBooked && styles.nomChipDisabled]}
+                          onPress={() => setPreferredTime(nom.slotTime)}
+                        >
+                          <View style={styles.nomChipLeft}>
+                            <Feather name="award" size={18} color={active ? colors.white : colors.gold} />
+                            <Text style={[styles.nomChipTime, active && styles.nomChipTextOn]}>
+                              {nom.slotTime}　{nom.staffLabel}指名
+                            </Text>
+                          </View>
+                          <Text style={[styles.nomChipFee, active && styles.nomChipTextOn]}>
+                            {isBooked ? "予約済" : `＋${yen(nom.fee)}`}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })()}
+                  </>
+                )}
               </>
             )}
           </>
@@ -326,6 +362,44 @@ const styles = StyleSheet.create({
   },
   timeChipTextDisabled: {
     color: colors.textLight,
+  },
+  nomChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 52,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius,
+    backgroundColor: "#fdf8ee",
+  },
+  nomChipOn: {
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
+  },
+  nomChipDisabled: {
+    backgroundColor: colors.bgSub,
+    borderColor: colors.border,
+  },
+  nomChipLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  nomChipTime: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.text,
+  },
+  nomChipFee: {
+    fontFamily: fonts.serifEn,
+    fontSize: fontSize.body,
+    color: colors.goldDeep,
+  },
+  nomChipTextOn: {
+    color: colors.white,
   },
   bottomBar: {
     padding: spacing.md,

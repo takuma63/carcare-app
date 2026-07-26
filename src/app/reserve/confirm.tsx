@@ -61,8 +61,15 @@ export default function ConfirmScreen() {
 
   const order = buildOrder();
   const categoryLabel = menu?.categories[category] ?? category;
+
+  // 店長指名：対象店舗＋対象時刻を選んでいれば指名料が加算される
+  const nom = menu?.nomination?.enabled ? menu.nomination : null;
+  const isNominated = !!(nom && shop === nom.shop && preferredTime === nom.slotTime);
+  const nominationFee = isNominated && nom ? nom.fee : 0;
+  const grandTotal = summary.total + nominationFee;
+
   // 要見積りのみ（確定金額0円）の予約は事前決済の対象外
-  const onlineAvailable = STRIPE_ENABLED && summary.total > 0;
+  const onlineAvailable = STRIPE_ENABLED && grandTotal > 0;
 
   const preferredAtIso = () =>
     preferredDate && preferredTime ? new Date(`${preferredDate}T${preferredTime}:00`).toISOString() : null;
@@ -73,6 +80,7 @@ export default function ConfirmScreen() {
     preferred_at: preferredAtIso(),
     note: note.trim() || null,
     payment_intent_id: paymentIntentId,
+    nominated: isNominated,
   });
 
   const finish = (result: SubmitBookingResult, paidAmount: number | null) => {
@@ -93,7 +101,11 @@ export default function ConfirmScreen() {
 
   /* 今すぐ決済：payment-intent → PaymentSheet → booking（リトライ3回） */
   const submitPayOnline = async () => {
-    const { client_secret, amount } = await createPaymentIntent(order.items, order.category);
+    const { client_secret, amount } = await createPaymentIntent(order.items, order.category, {
+      nominated: isNominated,
+      shop: shop ?? null,
+      slot_time: preferredTime ?? null,
+    });
 
     const init = await initPaymentSheet({
       paymentIntentClientSecret: client_secret,
@@ -171,10 +183,16 @@ export default function ConfirmScreen() {
               <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : "要見積り"}</Text>
             </View>
           ))}
+          {isNominated && nom && (
+            <View style={styles.itemRow}>
+              <Text style={styles.itemName}>指名料（{nom.staffLabel}指名）</Text>
+              <Text style={styles.itemPrice}>{yen(nominationFee)}</Text>
+            </View>
+          )}
           <View style={[styles.itemRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>合計（税込）</Text>
+            <Text style={styles.totalLabel}>{isNominated ? "お支払い合計（税込）" : "合計（税込）"}</Text>
             <Text style={styles.totalPrice}>
-              {yen(summary.total)}
+              {yen(grandTotal)}
               {summary.hasQuote ? " ＋ 要見積り" : ""}
             </Text>
           </View>
@@ -186,7 +204,10 @@ export default function ConfirmScreen() {
           <Text style={styles.rowLabel}>店舗</Text>
           <Text style={styles.rowValue}>{shop ?? "未選択"}</Text>
           <Text style={[styles.rowLabel, styles.rowLabelSpaced]}>ご希望日時</Text>
-          <Text style={styles.rowValue}>{formatDateTime(preferredDate, preferredTime)}</Text>
+          <Text style={styles.rowValue}>
+            {formatDateTime(preferredDate, preferredTime)}
+            {isNominated && nom ? `　（${nom.staffLabel}指名）` : ""}
+          </Text>
         </Card>
 
         <Card style={styles.card}>
