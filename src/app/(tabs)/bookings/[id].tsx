@@ -1,21 +1,18 @@
 /* ============================================================
    bookings/[id].tsx  ―  S9 予約詳細（SPEC.md §4.2）
-   全項目表示＋受付QR再表示。in_progress/doneは目立つ案内を表示する。
+   全項目を表示。in_progress/doneは目立つ案内を表示する。
+   ※ 受付QRは廃止済み（来店時はお名前・予約番号で受付）。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import Constants from "expo-constants";
-import QRCode from "react-native-qrcode-svg";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchMyBookings, ApiError } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
-
-const STATUS_BASE_URL = (Constants.expoConfig?.extra?.STATUS_BASE_URL as string | undefined) ?? "";
 
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,7 +48,6 @@ export default function BookingDetailScreen() {
     );
   }
 
-  const qrValue = `${STATUS_BASE_URL}/t/${booking.public_token}`;
   const shortToken = booking.public_token.slice(0, 8).toUpperCase();
 
   return (
@@ -71,11 +67,6 @@ export default function BookingDetailScreen() {
           <Text style={styles.noticeText}>作業が完了しました。お車のお引き取りをお願いします。</Text>
         </Card>
       )}
-
-      <Card style={styles.qrCard}>
-        <QRCode value={qrValue} size={180} color={colors.text} backgroundColor={colors.white} />
-        <Text style={styles.qrHint}>ご来店時にこの画面をスタッフにお見せください</Text>
-      </Card>
 
       <Card style={styles.detailCard}>
         <DetailRow label="お車" value={booking.car_official ?? "未判定"} sub={booking.category ?? undefined} />
@@ -187,17 +178,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: fontSize.caption,
     color: colors.text,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  qrCard: {
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  qrHint: {
-    fontFamily: fonts.sans,
-    fontSize: fontSize.caption,
-    color: colors.textLight,
     textAlign: "center",
     lineHeight: 20,
   },

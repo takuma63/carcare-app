@@ -1,20 +1,17 @@
 /* ============================================================
-   reserve/done.tsx  ―  S7 予約完了（SPEC.md §4.2）
+   reserve/done.tsx  ―  S7 予約完了
    ------------------------------------------------------------
-   受付QRコード（§7.2のURL形式）を「受付チケット」風のカードで大きく表示。
-   来店時にスタッフへ見せてもらう画面なので、スクリーンショット保存も促す。
+   予約完了を「受付チケット」風のカードで表示する。
+   ※ 受付QRは廃止（作業中にかざす手間をなくすため）。ご来店時は
+     お名前または予約番号をスタッフにお伝えいただく運用。
 ============================================================ */
 
 import React, { useEffect, useRef } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import Constants from "expo-constants";
-import QRCode from "react-native-qrcode-svg";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
-
-const STATUS_BASE_URL = (Constants.expoConfig?.extra?.STATUS_BASE_URL as string | undefined) ?? "";
 
 export default function BookingDoneScreen() {
   const { token, paid } = useLocalSearchParams<{ token: string; paid?: string }>();
@@ -26,7 +23,6 @@ export default function BookingDoneScreen() {
     Animated.spring(anim, { toValue: 1, useNativeDriver: true, friction: 6, tension: 60 }).start();
   }, [anim]);
 
-  const qrValue = `${STATUS_BASE_URL}/t/${token}`;
   const shortToken = (token ?? "").slice(0, 8).toUpperCase();
 
   return (
@@ -41,6 +37,7 @@ export default function BookingDoneScreen() {
       </Animated.View>
 
       <Text style={styles.title}>ご予約ありがとう{"\n"}ございました</Text>
+      <Text style={styles.lead}>ご予約を承りました。確定のご連絡を改めて差し上げます。</Text>
 
       <View style={styles.ticket}>
         <Text style={styles.ticketLabel}>RECEPTION TICKET</Text>
@@ -52,12 +49,10 @@ export default function BookingDoneScreen() {
           </View>
         )}
         <View style={styles.dashedLine} />
-        <QRCode value={qrValue} size={200} color={colors.text} backgroundColor={colors.white} />
-        <View style={styles.dashedLine} />
-        <Text style={styles.qrHint}>ご来店時にこの画面を{"\n"}スタッフにお見せください</Text>
+        <Text style={styles.hint}>ご来店時は、お名前または予約番号を{"\n"}スタッフにお伝えください</Text>
       </View>
 
-      <Text style={styles.screenshotHint}>スクリーンショットで保存しておくと安心です。</Text>
+      <Text style={styles.subHint}>ご予約内容は「予約履歴」からいつでもご確認いただけます。</Text>
 
       <GoldButton title="ホームへ戻る" onPress={() => router.replace("/")} style={styles.homeButton} />
     </ScrollView>
@@ -88,6 +83,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 36,
   },
+  lead: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    textAlign: "center",
+    lineHeight: 20,
+  },
   ticket: {
     alignSelf: "stretch",
     alignItems: "center",
@@ -106,8 +108,8 @@ const styles = StyleSheet.create({
   },
   tokenLabel: {
     fontFamily: fonts.serifEn,
-    fontSize: fontSize.h3,
-    letterSpacing: 1,
+    fontSize: fontSize.h2,
+    letterSpacing: 2,
     color: colors.text,
   },
   dashedLine: {
@@ -130,17 +132,18 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.white,
   },
-  qrHint: {
+  hint: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
     textAlign: "center",
     lineHeight: 20,
   },
-  screenshotHint: {
+  subHint: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
+    textAlign: "center",
     lineHeight: 20,
   },
   homeButton: {

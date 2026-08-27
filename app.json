@@ -12,10 +12,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "jp.co.carcarecenter.app",
-      "infoPlist": {
-        "NSCameraUsageDescription": "受付QRコードの読み取りに使用します"
-      }
+      "bundleIdentifier": "jp.co.carcarecenter.app"
     },
     "android": {
       "package": "jp.co.carcarecenter.app",
@@ -34,12 +31,6 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "受付QRコードの読み取りに使用します"
-        }
-      ],
       [
         "expo-notifications",
         {

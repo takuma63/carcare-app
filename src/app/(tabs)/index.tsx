@@ -5,7 +5,7 @@
    フルブリードヒーロー（白抜きロゴ＋グラデーション＋左下コピー）
    → WELCOME挨拶 → クイックアクション2ボタン → 予約チケットカード
    → 店舗一覧（淡灰の帯＋白カード行）。
-   「予約する」は /reserve（S3〜S7）、「受付QR」は /scan（S12）へ。
+   「予約する」→ /reserve（S3〜S7）。受付QRは廃止済み。
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
@@ -114,13 +114,6 @@ export default function HomeScreen() {
         {/* 02 クイックアクション */}
         <View style={styles.actions}>
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
-          <GoldButton
-            title="受付QR"
-            icon="camera"
-            variant="secondary"
-            onPress={() => router.push("/scan")}
-            style={styles.actionSub}
-          />
         </View>
 
         {/* 06 予約チケットカード（S7完了画面と同じ意匠） */}
@@ -246,16 +239,11 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   actions: {
-    flexDirection: "row",
-    gap: 10,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.md,
   },
   actionMain: {
-    flex: 1.4,
-  },
-  actionSub: {
-    flex: 1,
+    width: "100%",
   },
   ticket: {
     marginTop: spacing.md,
