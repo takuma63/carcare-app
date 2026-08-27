@@ -8,7 +8,7 @@
 ============================================================ */
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
@@ -16,6 +16,7 @@ import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
 import { fetchSlots } from "@/lib/api";
+import { staffPhoto } from "@/lib/staff-photos";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
 const STORE_NAMES = ["横浜ランドマークタワー店", "そごう横浜店", "東戸塚オーロラシティ店", "六本木ヒルズ店", "銀座店"];
@@ -42,16 +43,26 @@ function yen(n: number): string {
 
 export default function DateTimeScreen() {
   const router = useRouter();
-  const { menu, shop, setShop, preferredDate, setPreferredDate, preferredTime, setPreferredTime, skipDateTime, setSkipDateTime } =
-    useReservation();
+  const {
+    menu, shop, setShop, preferredDate, setPreferredDate, preferredTime, setPreferredTime,
+    nominatedStaffId, setNominatedStaffId, skipDateTime, setSkipDateTime,
+  } = useReservation();
 
   const [booked, setBooked] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // 指名制度：対象店舗では通常枠を17:30までにし、18:00を店長指名専用枠として出す
+  // 通常枠は全店 10:00〜18:00。六本木ヒルズ店の18:00では任意でスタッフ指名を付けられる
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
   const isNomShop = !!(nom && shop === nom.shop);
-  const timeOptions = useMemo(() => buildTimeOptions(isNomShop ? 17 * 60 + 30 : 18 * 60), [isNomShop]);
+  const staffList = nom?.staff ?? [];
+  const timeOptions = useMemo(() => buildTimeOptions(18 * 60), []);
+  // 指名UIを出せる状態か（対象店＋18:00枠を選択中）
+  const nominateEligible = !!(nom && isNomShop && preferredTime === nom.slotTime);
+
+  // 18:00以外に移ったら指名を解除する（料金が残らないように）
+  useEffect(() => {
+    if (!nominateEligible && nominatedStaffId) setNominatedStaffId(null);
+  }, [nominateEligible, nominatedStaffId, setNominatedStaffId]);
 
   const dateOptions = useMemo(() => {
     const today = new Date();
@@ -161,7 +172,7 @@ export default function DateTimeScreen() {
             {preferredDate && (
               <>
                 <Text style={styles.sectionLabel}>
-                  ご希望時間（10:00〜{isNomShop ? "17:30" : "18:00"}）{loadingSlots ? "　確認中…" : ""}
+                  ご希望時間（10:00〜18:00）{loadingSlots ? "　確認中…" : ""}
                 </Text>
                 <View style={styles.timeGrid}>
                   {timeOptions.map((t) => {
@@ -188,32 +199,42 @@ export default function DateTimeScreen() {
                   })}
                 </View>
 
-                {/* 指名専用枠（六本木ヒルズ店・18:00）。選ぶと確認画面で指名料が加算される */}
-                {isNomShop && nom && (
-                  <>
-                    <Text style={styles.sectionLabel}>店長を指名して予約</Text>
-                    {(() => {
-                      const isBooked = booked.includes(nom.slotTime);
-                      const active = preferredTime === nom.slotTime;
-                      return (
-                        <TouchableOpacity
-                          disabled={isBooked}
-                          style={[styles.nomChip, active && styles.nomChipOn, isBooked && styles.nomChipDisabled]}
-                          onPress={() => setPreferredTime(nom.slotTime)}
-                        >
-                          <View style={styles.nomChipLeft}>
-                            <Feather name="award" size={18} color={active ? colors.white : colors.gold} />
-                            <Text style={[styles.nomChipTime, active && styles.nomChipTextOn]}>
-                              {nom.slotTime}　{nom.staffLabel}指名
-                            </Text>
-                          </View>
-                          <Text style={[styles.nomChipFee, active && styles.nomChipTextOn]}>
-                            {isBooked ? "予約済" : `＋${yen(nom.fee)}`}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })()}
-                  </>
+                {/* 指名オプション（六本木ヒルズ店・18:00枠を選択中のみ）。
+                    スタッフを1名選ぶと確認画面で指名料が加算される（任意） */}
+                {nominateEligible && nom && (
+                  <View style={styles.nomBox}>
+                    <View style={styles.nomHeadRow}>
+                      <Feather name="award" size={18} color={colors.gold} />
+                      <Text style={styles.nomHead}>スタッフを指名する（任意・＋{yen(nom.fee)}）</Text>
+                    </View>
+                    <Text style={styles.nomHint}>担当スタッフを1名お選びください。作業は指名スタッフが担当します。</Text>
+                    <View style={styles.staffGrid}>
+                      {staffList.map((s) => {
+                        const active = nominatedStaffId === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            style={[styles.staffCard, active && styles.staffCardOn]}
+                            onPress={() => setNominatedStaffId(active ? null : s.id)}
+                          >
+                            <Image source={staffPhoto(s.id)} style={styles.staffPhoto} />
+                            <Text style={styles.staffName} numberOfLines={1}>{s.name}</Text>
+                            {!!s.role && <Text style={styles.staffRole} numberOfLines={1}>{s.role}</Text>}
+                            {active && (
+                              <View style={styles.staffCheck}>
+                                <Feather name="check" size={12} color={colors.white} />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    {nominatedStaffId && (
+                      <TouchableOpacity onPress={() => setNominatedStaffId(null)}>
+                        <Text style={styles.nomClear}>指名を解除する</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </>
             )}
@@ -363,43 +384,89 @@ const styles = StyleSheet.create({
   timeChipTextDisabled: {
     color: colors.textLight,
   },
-  nomChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 52,
-    paddingVertical: 12,
-    paddingHorizontal: spacing.md,
+  nomBox: {
+    marginTop: spacing.sm,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.gold,
-    borderRadius: radius,
-    backgroundColor: "#fdf8ee",
-  },
-  nomChipOn: {
-    backgroundColor: colors.gold,
-    borderColor: colors.gold,
-  },
-  nomChipDisabled: {
-    backgroundColor: colors.bgSub,
     borderColor: colors.border,
+    borderTopWidth: 2,
+    borderTopColor: colors.gold,
+    borderRadius: radius,
+    backgroundColor: colors.white,
+    gap: spacing.sm,
   },
-  nomChipLeft: {
+  nomHeadRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
   },
-  nomChipTime: {
+  nomHead: {
     fontFamily: fonts.sansMedium,
     fontSize: fontSize.body,
     color: colors.text,
+    flexShrink: 1,
   },
-  nomChipFee: {
-    fontFamily: fonts.serifEn,
-    fontSize: fontSize.body,
+  nomHint: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    lineHeight: 18,
+  },
+  staffGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  staffCard: {
+    width: "30%",
+    minWidth: 96,
+    flexGrow: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    backgroundColor: colors.bg,
+  },
+  staffCardOn: {
+    borderColor: colors.gold,
+    backgroundColor: "#fdf8ee",
+  },
+  staffPhoto: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: radius,
+    backgroundColor: colors.bgSub,
+    marginBottom: 6,
+  },
+  staffName: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+  },
+  staffRole: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.textLight,
+  },
+  staffCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.gold,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nomClear: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
     color: colors.goldDeep,
-  },
-  nomChipTextOn: {
-    color: colors.white,
+    textDecorationLine: "underline",
+    marginTop: 2,
   },
   bottomBar: {
     padding: spacing.md,

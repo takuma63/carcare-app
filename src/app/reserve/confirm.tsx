@@ -52,7 +52,7 @@ function formatDateTime(date: string | null, time: string | null): string {
 export default function ConfirmScreen() {
   const router = useRouter();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const { menu, category, shop, preferredDate, preferredTime, note, setNote, summary, buildOrder, reset } =
+  const { menu, category, shop, preferredDate, preferredTime, nominatedStaffId, note, setNote, summary, buildOrder, reset } =
     useReservation();
 
   const [payMethod, setPayMethod] = useState<"store" | "online">("store");
@@ -62,9 +62,10 @@ export default function ConfirmScreen() {
   const order = buildOrder();
   const categoryLabel = menu?.categories[category] ?? category;
 
-  // 店長指名：対象店舗＋対象時刻を選んでいれば指名料が加算される
+  // 指名：対象店舗＋対象時刻＋スタッフを1名選んでいれば指名料が加算される
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
-  const isNominated = !!(nom && shop === nom.shop && preferredTime === nom.slotTime);
+  const nominatedStaff = nom?.staff?.find((s) => s.id === nominatedStaffId) ?? null;
+  const isNominated = !!(nom && shop === nom.shop && preferredTime === nom.slotTime && nominatedStaff);
   const nominationFee = isNominated && nom ? nom.fee : 0;
   const grandTotal = summary.total + nominationFee;
 
@@ -81,6 +82,7 @@ export default function ConfirmScreen() {
     note: note.trim() || null,
     payment_intent_id: paymentIntentId,
     nominated: isNominated,
+    nominated_staff_id: isNominated && nominatedStaff ? nominatedStaff.id : null,
   });
 
   const finish = (result: SubmitBookingResult, paidAmount: number | null) => {
@@ -105,6 +107,7 @@ export default function ConfirmScreen() {
       nominated: isNominated,
       shop: shop ?? null,
       slot_time: preferredTime ?? null,
+      staff_id: isNominated && nominatedStaff ? nominatedStaff.id : null,
     });
 
     const init = await initPaymentSheet({
@@ -183,9 +186,9 @@ export default function ConfirmScreen() {
               <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : "要見積り"}</Text>
             </View>
           ))}
-          {isNominated && nom && (
+          {isNominated && nominatedStaff && (
             <View style={styles.itemRow}>
-              <Text style={styles.itemName}>指名料（{nom.staffLabel}指名）</Text>
+              <Text style={styles.itemName}>指名料（{nominatedStaff.name}指名）</Text>
               <Text style={styles.itemPrice}>{yen(nominationFee)}</Text>
             </View>
           )}
@@ -206,7 +209,7 @@ export default function ConfirmScreen() {
           <Text style={[styles.rowLabel, styles.rowLabelSpaced]}>ご希望日時</Text>
           <Text style={styles.rowValue}>
             {formatDateTime(preferredDate, preferredTime)}
-            {isNominated && nom ? `　（${nom.staffLabel}指名）` : ""}
+            {isNominated && nominatedStaff ? `　（${nominatedStaff.name}指名）` : ""}
           </Text>
         </Card>
 

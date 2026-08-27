@@ -114,12 +114,19 @@ export function linkBooking(publicToken: string) {
 }
 
 /* ---------- menu ---------- */
+export interface NominationStaff {
+  id: string;
+  name: string;
+  role?: string;
+  photo?: string;
+}
 export interface Nomination {
   enabled: boolean;
   shop: string;
   slotTime: string;
   fee: number;
   staffLabel: string;
+  staff?: NominationStaff[];
 }
 export interface MenuResult {
   ok: true;
@@ -197,7 +204,7 @@ export interface PaymentIntentResult {
 export function createPaymentIntent(
   items: { id: string; name: string; option: string | null; price: number | null }[],
   category: string,
-  nomination?: { nominated: boolean; shop: string | null; slot_time: string | null }
+  nomination?: { nominated: boolean; shop: string | null; slot_time: string | null; staff_id: string | null }
 ) {
   return request<PaymentIntentResult>("payment-intent", {
     body: {
@@ -206,6 +213,7 @@ export function createPaymentIntent(
       nominated: nomination?.nominated ?? false,
       shop: nomination?.shop ?? null,
       slot_time: nomination?.slot_time ?? null,
+      nominated_staff_id: nomination?.staff_id ?? null,
     },
   });
 }
@@ -225,6 +233,7 @@ export interface SubmitBookingParams {
   note: string | null;
   payment_intent_id?: string;
   nominated?: boolean;
+  nominated_staff_id?: string | null;
 }
 export interface SubmitBookingResult {
   ok: true;
