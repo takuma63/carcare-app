@@ -43,3 +43,22 @@ npx expo start --tunnel   # 会社Wi-Fi等で端末に繋がらない場合
 
 Expo Go ではプッシュトークンが取得できないため、実受信の確認は
 EAS development build（Apple Developer Program 契約後）で行う。
+
+## TestFlight 配布（デモ用）
+
+前提：Apple Developer Program（年12,980円）契約済み・Expoアカウント（無料）作成済み。
+
+```bash
+npm install -g eas-cli
+eas login                 # Expoアカウントでログイン
+eas init                  # プロジェクトIDをapp.jsonに紐付け（初回のみ）
+eas build -p ios --profile production   # クラウドでビルド（Apple IDの認証あり）
+eas submit -p ios         # App Store Connect / TestFlight へアップロード
+```
+
+- 初回は `eas build` 中に Apple ID でログインし、証明書類の自動生成に同意する
+- アップロード後、App Store Connect › TestFlight で「内部テスター」に
+  デモ相手のメールアドレスを追加すると、TestFlightアプリ経由でインストールできる
+- TestFlightビルドでは Expo Go と違い**プッシュ通知が実際に届く**
+  （SPEC §12 受け入れテスト3〜5の実機確認はこのビルドで行う）
+
