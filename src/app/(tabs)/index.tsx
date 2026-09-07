@@ -55,7 +55,8 @@ export default function HomeScreen() {
   const loadActiveBooking = async () => {
     try {
       const { bookings } = await fetchMyBookings();
-      const active = bookings.find((b) => ACTIVE_STATUSES.has(b.status)) ?? null;
+      // 進行中＝有効な状態、かつ「作業完了のお知らせ」がまだ送られていない予約
+      const active = bookings.find((b) => ACTIVE_STATUSES.has(b.status) && !b.completed_at) ?? null;
       setActiveBooking(active);
     } catch {
       // ホーム画面では通信エラーを静かに無視する（他の情報は表示できるため）

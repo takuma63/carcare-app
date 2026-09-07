@@ -57,12 +57,7 @@ export default function BookingDetailScreen() {
         <StatusBadge status={booking.status} />
       </View>
 
-      {booking.status === "in_progress" && (
-        <Card style={[styles.noticeCard, styles.noticeInProgress]}>
-          <Text style={styles.noticeText}>作業中です。完了したら通知でお知らせします。</Text>
-        </Card>
-      )}
-      {booking.status === "done" && (
+      {booking.completed_at && (
         <Card style={[styles.noticeCard, styles.noticeDone]}>
           <Text style={styles.noticeText}>作業が完了しました。お車のお引き取りをお願いします。</Text>
         </Card>
@@ -167,9 +162,6 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     alignItems: "center",
-  },
-  noticeInProgress: {
-    backgroundColor: "#fdf6e8",
   },
   noticeDone: {
     backgroundColor: "#eef6ee",
