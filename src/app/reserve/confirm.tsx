@@ -65,7 +65,7 @@ export default function ConfirmScreen() {
   // 指名：対象店舗＋対象時刻＋スタッフを1名選んでいれば指名料が加算される
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
   const nominatedStaff = nom?.staff?.find((s) => s.id === nominatedStaffId) ?? null;
-  const isNominated = !!(nom && shop === nom.shop && preferredTime === nom.slotTime && nominatedStaff);
+  const isNominated = !!(nom && !!shop && (nom.shop == null || shop === nom.shop) && preferredTime === nom.slotTime && nominatedStaff);
   const nominationFee = isNominated && nom ? nom.fee : 0;
   const grandTotal = summary.total + nominationFee;
 

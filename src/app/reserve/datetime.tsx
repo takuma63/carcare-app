@@ -51,9 +51,10 @@ export default function DateTimeScreen() {
   const [booked, setBooked] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // 通常枠は全店 10:00〜18:00。六本木ヒルズ店の18:00では任意でスタッフ指名を付けられる
+  // 通常枠は全店 10:00〜18:00。18:00 枠では任意でスタッフ指名を付けられる
+  // （nom.shop が null なら全店舗、店舗名なら当該店のみ）
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
-  const isNomShop = !!(nom && shop === nom.shop);
+  const isNomShop = !!(nom && !!shop && (nom.shop == null || shop === nom.shop));
   const staffList = nom?.staff ?? [];
   const timeOptions = useMemo(() => buildTimeOptions(18 * 60), []);
   // 指名UIを出せる状態か（対象店＋18:00枠を選択中）

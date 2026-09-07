@@ -122,7 +122,7 @@ export interface NominationStaff {
 }
 export interface Nomination {
   enabled: boolean;
-  shop: string;
+  shop: string | null;   // null＝全店舗で指名可
   slotTime: string;
   fee: number;
   staffLabel: string;

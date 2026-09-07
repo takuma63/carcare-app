@@ -15,12 +15,11 @@ import type { ImageSourcePropType } from "react-native";
 
 const PLACEHOLDER = require("@/assets/staff/placeholder.jpg");
 
-// nomination-data.js の staff[].id と対応（仮枠4名分。実写真に差し替える）
+// nomination-data.js の staff[].id と対応（仮枠3名分。実写真に差し替える）
 const STAFF_PHOTOS: Record<string, ImageSourcePropType> = {
   staff1: require("@/assets/staff/staff1.jpg"),
   staff2: require("@/assets/staff/staff2.jpg"),
   staff3: require("@/assets/staff/staff3.jpg"),
-  staff4: require("@/assets/staff/staff4.jpg"),
 };
 
 /** スタッフidに対応する顔写真を返す。未登録ならプレースホルダー。 */
