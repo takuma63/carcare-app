@@ -32,7 +32,14 @@ function DiscountBadge({ coupon, muted }: { coupon: Coupon; muted: boolean }) {
   const isPercent = coupon.discount_type === "percent";
   return (
     <View style={styles.badge}>
-      <Text style={[styles.badgeValue, muted && styles.mutedText]}>
+      <Text
+        style={[
+          styles.badgeValue,
+          !isPercent && styles.badgeValueYen,
+          muted && styles.mutedText,
+        ]}
+        numberOfLines={1}
+      >
         {isPercent ? coupon.discount_value : coupon.discount_value.toLocaleString("ja-JP")}
       </Text>
       <Text style={[styles.badgeUnit, muted && styles.mutedText]}>
@@ -243,24 +250,27 @@ const styles = StyleSheet.create({
   },
 
   badge: {
-    width: 76,
+    width: 84,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     flexWrap: "wrap",
   },
   badgeValue: {
-    fontFamily: fonts.serifEn,
-    fontSize: 40,
-    lineHeight: 44,
+    fontFamily: fonts.sansBold,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.5,
     color: colors.gold,
   },
   badgeUnit: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.body,
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.bodyLarge,
     color: colors.gold,
     marginLeft: 1,
   },
+  // 「3,000」のように桁が多いときは少し小さく
+  badgeValueYen: { fontSize: 24, lineHeight: 30 },
   badgeOff: {
     fontFamily: fonts.sansMedium,
     fontSize: 11,
