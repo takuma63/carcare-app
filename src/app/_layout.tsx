@@ -12,7 +12,7 @@ import { Stack, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
-import { StripeProvider } from "@stripe/stripe-react-native";
+import { StripeProvider } from "@/lib/stripe";
 import { useFonts as useCormorantFonts, CormorantGaramond_600SemiBold } from "@expo-google-fonts/cormorant-garamond";
 import { useFonts as useNotoSerifFonts, NotoSerifJP_600SemiBold } from "@expo-google-fonts/noto-serif-jp";
 import {

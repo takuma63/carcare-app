@@ -9,17 +9,25 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import type { Booking, Customer, MenuCategories, MenuGroup } from "./types";
+import type { Booking, Coupon, Customer, MenuCategories, MenuGroup } from "./types";
 
 const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?? "";
 const TOKEN_KEY = "ccc_auth_token";
 
 export class ApiError extends Error {}
 
+/* 保存先：実機は SecureStore（暗号化）。
+   Web（PCでの動作確認用）は SecureStore が使えないため AsyncStorage を使う。
+   ※Webはあくまで開発確認用。本番の配布は iOS/Android アプリのみ。 */
+const useSecureStore = Platform.OS !== "web";
+
 export async function getToken(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(TOKEN_KEY);
+    return useSecureStore
+      ? await SecureStore.getItemAsync(TOKEN_KEY)
+      : await AsyncStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -27,15 +35,17 @@ export async function getToken(): Promise<string | null> {
 
 export async function setToken(token: string): Promise<void> {
   try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    if (useSecureStore) await SecureStore.setItemAsync(TOKEN_KEY, token);
+    else await AsyncStorage.setItem(TOKEN_KEY, token);
   } catch {
-    // SecureStoreが使えない環境（一部Web等）でも致命的にはしない
+    // 保存できない環境でも致命的にはしない
   }
 }
 
 export async function clearToken(): Promise<void> {
   try {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    if (useSecureStore) await SecureStore.deleteItemAsync(TOKEN_KEY);
+    else await AsyncStorage.removeItem(TOKEN_KEY);
   } catch {
     // noop
   }
@@ -102,6 +112,16 @@ export interface MyBookingsResult {
 }
 export function fetchMyBookings() {
   return request<MyBookingsResult>("my-bookings");
+}
+
+/* ---------- my-coupons ---------- */
+export interface MyCouponsResult {
+  ok: true;
+  coupons: Coupon[];
+  available_count: number;
+}
+export function fetchMyCoupons() {
+  return request<MyCouponsResult>("my-coupons");
 }
 
 /* ---------- link-booking ---------- */
@@ -234,6 +254,8 @@ export interface SubmitBookingParams {
   payment_intent_id?: string;
   nominated?: boolean;
   nominated_staff_id?: string | null;
+  /** 適用するクーポン（coupon_grants.id）。割引額はサーバーが計算する */
+  coupon_grant_id?: string | null;
 }
 export interface SubmitBookingResult {
   ok: true;

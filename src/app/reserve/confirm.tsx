@@ -8,7 +8,7 @@
    クーポンは Phase 6 で追加する。
 ============================================================ */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,13 +22,14 @@ import {
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { Feather } from "@expo/vector-icons";
-import { useStripe } from "@stripe/stripe-react-native";
+import { useStripe } from "@/lib/stripe";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useReservation } from "@/lib/reservation-context";
-import { createPaymentIntent, submitBooking, ApiError, type SubmitBookingResult } from "@/lib/api";
+import { createPaymentIntent, submitBooking, fetchMyCoupons, ApiError, type SubmitBookingResult } from "@/lib/api";
+import type { Coupon } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
@@ -67,7 +68,44 @@ export default function ConfirmScreen() {
   const nominatedStaff = nom?.staff?.find((s) => s.id === nominatedStaffId) ?? null;
   const isNominated = !!(nom && !!shop && (nom.shop == null || shop === nom.shop) && preferredTime === nom.slotTime && nominatedStaff);
   const nominationFee = isNominated && nom ? nom.fee : 0;
-  const grandTotal = summary.total + nominationFee;
+
+  // クーポン：利用できるものだけ出す。対象メニューを含まない予約では選べない。
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponId, setCouponId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchMyCoupons()
+      .then((r) => { if (alive) setCoupons(r.coupons.filter((c) => c.status === "available")); })
+      .catch((e) => console.error("[confirm] クーポン取得に失敗:", e));
+    return () => { alive = false; };
+  }, []);
+
+  /* そのクーポンが対象にしている明細の合計（対象外なら0） */
+  const eligibleAmountOf = (c: Coupon) => {
+    const groups = c.target_groups;
+    return order.items.reduce((sum, it) => {
+      if (it.price == null) return sum;                       // 要見積りは対象外
+      if (groups && groups.length) {
+        const gid = menu?.groups.find((g) => g.items.some((mi) => mi.id === it.id))?.id;
+        if (!gid || !groups.includes(gid)) return sum;
+      }
+      return sum + it.price;
+    }, 0);
+  };
+  const discountOf = (c: Coupon) => {
+    const eligible = eligibleAmountOf(c);
+    if (eligible <= 0) return 0;
+    return c.discount_type === "percent"
+      ? Math.min(Math.floor((eligible * c.discount_value) / 100), eligible)
+      : Math.min(c.discount_value, eligible);
+  };
+
+  const usableCoupons = coupons.filter((c) => eligibleAmountOf(c) > 0);
+  const selectedCoupon = usableCoupons.find((c) => c.grant_id === couponId) ?? null;
+  const discount = selectedCoupon ? discountOf(selectedCoupon) : 0;
+
+  const grandTotal = summary.total + nominationFee - discount;
 
   // 要見積りのみ（確定金額0円）の予約は事前決済の対象外
   const onlineAvailable = STRIPE_ENABLED && grandTotal > 0;
@@ -83,6 +121,7 @@ export default function ConfirmScreen() {
     payment_intent_id: paymentIntentId,
     nominated: isNominated,
     nominated_staff_id: isNominated && nominatedStaff ? nominatedStaff.id : null,
+    coupon_grant_id: selectedCoupon ? selectedCoupon.grant_id : null,
   });
 
   const finish = (result: SubmitBookingResult, paidAmount: number | null) => {
@@ -192,8 +231,14 @@ export default function ConfirmScreen() {
               <Text style={styles.itemPrice}>{yen(nominationFee)}</Text>
             </View>
           )}
+          {selectedCoupon && discount > 0 && (
+            <View style={styles.itemRow}>
+              <Text style={styles.discountName}>クーポン（{selectedCoupon.title}）</Text>
+              <Text style={styles.discountPrice}>−{yen(discount)}</Text>
+            </View>
+          )}
           <View style={[styles.itemRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>{isNominated ? "お支払い合計（税込）" : "合計（税込）"}</Text>
+            <Text style={styles.totalLabel}>{isNominated || discount > 0 ? "お支払い合計（税込）" : "合計（税込）"}</Text>
             <Text style={styles.totalPrice}>
               {yen(grandTotal)}
               {summary.hasQuote ? " ＋ 要見積り" : ""}
@@ -214,6 +259,45 @@ export default function ConfirmScreen() {
         </Card>
 
         <Card style={styles.card}>
+          {usableCoupons.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel}>クーポン</Text>
+              <TouchableOpacity
+                style={[styles.couponRow, !couponId && styles.couponRowOn]}
+                onPress={() => setCouponId(null)}
+              >
+                <Feather
+                  name={!couponId ? "check-circle" : "circle"}
+                  size={18}
+                  color={!couponId ? colors.gold : colors.border}
+                />
+                <Text style={styles.couponNone}>使用しない</Text>
+              </TouchableOpacity>
+              {usableCoupons.map((c) => {
+                const on = couponId === c.grant_id;
+                return (
+                  <TouchableOpacity
+                    key={c.grant_id}
+                    style={[styles.couponRow, on && styles.couponRowOn]}
+                    onPress={() => setCouponId(on ? null : c.grant_id)}
+                  >
+                    <Feather
+                      name={on ? "check-circle" : "circle"}
+                      size={18}
+                      color={on ? colors.gold : colors.border}
+                    />
+                    <View style={styles.couponInfo}>
+                      <Text style={styles.couponTitle}>{c.title}</Text>
+                      <Text style={styles.couponMeta}>{c.target_label}に利用できます</Text>
+                    </View>
+                    <Text style={styles.couponOff}>−{yen(discountOf(c))}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <Text style={styles.couponNote}>クーポンは1回のご予約につき1枚までご利用いただけます。</Text>
+            </>
+          )}
+
           <Text style={styles.sectionLabel}>お支払い方法</Text>
           <TouchableOpacity style={styles.paymentRow} onPress={() => setPayMethod("store")}>
             <View style={[styles.radio, payMethod === "store" && styles.radioOn]}>
@@ -310,6 +394,57 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
+  },
+  discountName: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.goldDeep,
+    flex: 1,
+  },
+  discountPrice: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.goldDeep,
+  },
+  couponRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    marginBottom: spacing.sm,
+  },
+  couponRowOn: { borderColor: colors.gold, backgroundColor: "#fdfbf6" },
+  couponInfo: { flex: 1, gap: 2 },
+  couponTitle: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+  },
+  couponMeta: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+  },
+  couponOff: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.goldDeep,
+  },
+  couponNone: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    flex: 1,
+  },
+  couponNote: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    marginBottom: spacing.md,
   },
   totalRow: {
     borderBottomWidth: 0,

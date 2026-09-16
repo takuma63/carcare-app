@@ -68,6 +68,7 @@ export type MenuCategories = Record<string, string>;
 
 export interface Coupon {
   grant_id: string;
+  coupon_id: string;
   title: string;
   description: string | null;
   discount_type: "percent" | "amount";
@@ -75,4 +76,8 @@ export interface Coupon {
   expires_at: string | null;
   used_at: string | null;
   status: "available" | "used" | "expired";
+  /** 対象メニューのグループid（null＝全メニュー） */
+  target_groups: string[] | null;
+  /** 「手洗い洗車・ワックスメニュー」のような表示用の文字列 */
+  target_label: string;
 }
