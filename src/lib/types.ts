@@ -66,6 +66,18 @@ export interface MenuGroup {
 
 export type MenuCategories = Record<string, string>;
 
+/** 来店スタンプカードの状況（my-stamps API） */
+export interface StampCard {
+  program_name: string;
+  required_count: number;
+  stamps: number;
+  remaining: number;
+  /** これまでに貯めきった回数 */
+  completed_count: number;
+  reward_title: string;
+  reward_description: string | null;
+}
+
 export interface Coupon {
   grant_id: string;
   coupon_id: string;
@@ -80,4 +92,6 @@ export interface Coupon {
   target_groups: string[] | null;
   /** 「手洗い洗車・ワックスメニュー」のような表示用の文字列 */
   target_label: string;
+  /** 使える店舗（null＝全店） */
+  target_shops: string[] | null;
 }

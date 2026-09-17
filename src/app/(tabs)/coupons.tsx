@@ -14,8 +14,8 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import { fetchMyCoupons } from "@/lib/api";
-import type { Coupon } from "@/lib/types";
+import { fetchMyCoupons, fetchMyStamps } from "@/lib/api";
+import type { Coupon, StampCard } from "@/lib/types";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 
 /* 有効期限の表示。期限が近いかどうかも返す */
@@ -116,8 +116,47 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
   );
 }
 
+/* 来店スタンプカード。丸を並べて、貯まった分を金で塗る。 */
+function StampCardView({ card }: { card: StampCard }) {
+  const dots = Array.from({ length: card.required_count }, (_, i) => i < card.stamps);
+  const done = card.remaining === 0;
+
+  return (
+    <View style={styles.stampCard}>
+      <View style={styles.stampHead}>
+        <Text style={styles.stampTitle}>{card.program_name}</Text>
+        <Text style={styles.stampCount}>
+          {card.stamps} / {card.required_count}
+        </Text>
+      </View>
+
+      <View style={styles.stampDots}>
+        {dots.map((filled, i) => (
+          <View key={i} style={[styles.dot, filled && styles.dotOn]}>
+            {filled ? (
+              <Feather name="check" size={13} color={colors.white} />
+            ) : (
+              <Text style={styles.dotNum}>{i + 1}</Text>
+            )}
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.stampLead}>
+        {done
+          ? `特典「${card.reward_title}」をお受け取りいただけます。`
+          : `あと ${card.remaining} 回のご来店で「${card.reward_title}」`}
+      </Text>
+      {card.completed_count > 0 ? (
+        <Text style={styles.stampHistory}>これまでに {card.completed_count} 回達成しています</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export default function CouponsScreen() {
   const [coupons, setCoupons] = useState<Coupon[] | null>(null);
+  const [stamp, setStamp] = useState<StampCard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -126,6 +165,13 @@ export default function CouponsScreen() {
       setError(null);
       const res = await fetchMyCoupons();
       setCoupons(res.coupons);
+      // スタンプは取れなくてもクーポン一覧は出す（補助的な表示のため）
+      try {
+        const st = await fetchMyStamps();
+        setStamp(st.card);
+      } catch (e) {
+        console.error("[coupons] スタンプの取得に失敗:", e);
+      }
     } catch (e) {
       console.error("[coupons] 取得に失敗:", e);
       setError(e instanceof Error ? e.message : "クーポンを取得できませんでした");
@@ -164,6 +210,8 @@ export default function CouponsScreen() {
     >
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {stamp ? <StampCardView card={stamp} /> : null}
+
       {available.length > 0 ? (
         <>
           <Text style={styles.sectionTitle}>ご利用いただけるクーポン</Text>
@@ -201,6 +249,69 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgSub },
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bgSub },
+
+  stampCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius,
+    borderTopWidth: 3,
+    borderTopColor: colors.gold,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    ...shadow,
+  },
+  stampHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
+  stampTitle: {
+    fontFamily: fonts.serifJp,
+    fontSize: fontSize.body,
+    color: colors.text,
+  },
+  stampCount: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.gold,
+  },
+  stampDots: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  dot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.bgSub,
+  },
+  dotOn: {
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
+  },
+  dotNum: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.textLight,
+  },
+  stampLead: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  stampHistory: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 2,
+  },
 
   sectionTitle: {
     fontFamily: fonts.serifJp,
