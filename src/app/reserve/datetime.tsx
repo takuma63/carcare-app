@@ -17,9 +17,11 @@ import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
 import { fetchSlots } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
+import { ShopMap } from "@/components/ShopMap";
+import { SHOP_NAMES, findShop } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
-const STORE_NAMES = ["横浜ランドマークタワー店", "そごう横浜店", "東戸塚オーロラシティ店", "六本木ヒルズ店", "銀座店"];
+const STORE_NAMES = SHOP_NAMES;   // 大元は src/lib/shops.ts
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 const DAYS_AHEAD = 14;
 
@@ -122,11 +124,17 @@ export default function DateTimeScreen() {
               style={[styles.storeRow, shop === name && styles.storeRowOn]}
               onPress={() => setShop(name)}
             >
-              <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{name}</Text>
+              <View style={styles.storeBody}>
+                <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{name}</Text>
+                <Text style={styles.storePlace}>{findShop(name)?.access}</Text>
+              </View>
               {shop === name && <Feather name="check" size={18} color={colors.gold} />}
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* 選んだ店舗の場所（2026-10-02 社長要望でGoogleマップを埋め込み） */}
+        <ShopMap shopName={shop} />
 
         <TouchableOpacity style={styles.skipRow} onPress={handleToggleSkip}>
           <View style={[styles.checkbox, skipDateTime && styles.checkboxOn]}>
@@ -281,6 +289,13 @@ const styles = StyleSheet.create({
   storeRowOn: {
     borderColor: colors.gold,
     backgroundColor: "#fdf8ee",
+  },
+  storeBody: { flex: 1, gap: 2 },
+  storePlace: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    lineHeight: 17,
   },
   storeName: {
     fontFamily: fonts.sans,
