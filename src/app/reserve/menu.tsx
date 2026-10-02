@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import {
+  Linking,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -97,6 +98,20 @@ export default function MenuSelectScreen() {
 
     return (
       <View key={item.id} style={styles.itemBlock}>
+        {group.phoneOnly ? (
+          /* 電話のみ受付：金額は見せるが選べない */
+          <View style={[styles.itemRow, styles.itemRowPhone]}>
+            <View style={styles.itemBody}>
+              <Text style={styles.itemName}>
+                {item.name}
+                {item.note ? <Text style={styles.itemNote}> {item.note}</Text> : null}
+              </Text>
+            </View>
+            <Text style={renderPriceLabel(item).startsWith("¥") ? styles.itemPrice : styles.itemPriceNote}>
+              {renderPriceLabel(item)}
+            </Text>
+          </View>
+        ) : (
         <TouchableOpacity style={styles.itemRow} onPress={() => handleToggleItem(item, group.id)} activeOpacity={0.7}>
           <View style={[styles.checkbox, isSelected && styles.checkboxOn]}>
             {isSelected && <Feather name="check" size={14} color={colors.white} />}
@@ -113,6 +128,7 @@ export default function MenuSelectScreen() {
             return <Text style={label.startsWith("¥") ? styles.itemPrice : styles.itemPriceNote}>{label}</Text>;
           })()}
         </TouchableOpacity>
+        )}
 
         {isSelected && item.priceType === "options" && item.options && (
           <View style={styles.optionRow}>
@@ -153,10 +169,29 @@ export default function MenuSelectScreen() {
     );
   };
 
+  /* 電話のみ受付の案内。タップで電話をかけられる。 */
+  const renderPhoneNotice = () => (
+    <TouchableOpacity
+      style={styles.phoneNotice}
+      onPress={() => Linking.openURL("tel:0662678288")}
+      activeOpacity={0.8}
+    >
+      <Feather name="phone" size={16} color={colors.goldDeep} />
+      <View style={styles.phoneNoticeBody}>
+        <Text style={styles.phoneNoticeText}>
+          こちらのメニューは、お車の状態を確認したうえでお日にちを調整させていただくため、
+          お電話でのご予約のみ承っております。
+        </Text>
+        <Text style={styles.phoneNoticeTel}>06-6267-8288（受付 10:00〜19:00）</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   const renderGroup = (group: MenuGroup) => (
     <View key={group.id} style={styles.groupBlock}>
       <Text style={styles.groupTitle}>{group.name}</Text>
       {group.note && <Text style={styles.groupNote}>{group.note}</Text>}
+      {group.phoneOnly && renderPhoneNotice()}
       {group.items.map((item) => renderItem(item, group))}
     </View>
   );
@@ -175,6 +210,7 @@ export default function MenuSelectScreen() {
         {isOpen && (
           <View style={styles.accBody}>
             {group.note && <Text style={styles.groupNote}>{group.note}</Text>}
+            {group.phoneOnly && renderPhoneNotice()}
             {group.items.map((item) => renderItem(item, group))}
           </View>
         )}
@@ -290,6 +326,35 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginBottom: 4,
   },
+  /* 電話のみ受付 */
+  itemRowPhone: {
+    opacity: 0.85,
+  },
+  phoneNotice: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    alignItems: "flex-start",
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: "#fdfbf6",
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+    borderRadius: radius,
+  },
+  phoneNoticeBody: { flex: 1, gap: 4 },
+  phoneNoticeText: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  phoneNoticeTel: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.bodyLarge,
+    color: colors.goldDeep,
+    letterSpacing: 0.5,
+  },
+
   itemBlock: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,

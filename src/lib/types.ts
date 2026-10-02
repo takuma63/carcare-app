@@ -62,6 +62,8 @@ export interface MenuGroup {
   single?: boolean;
   detailPage?: string;
   items: MenuItem[];
+  /** 電話のみ受付（表示はするが選択させない） */
+  phoneOnly?: boolean;
 }
 
 export type MenuCategories = Record<string, string>;
