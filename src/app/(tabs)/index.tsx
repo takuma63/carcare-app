@@ -27,11 +27,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { fetchMyBookings } from "@/lib/api";
+import { fetchMyBookings, fetchMyCoupons, fetchMyStamps } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
-import type { Booking } from "@/lib/types";
+import type { Booking, StampCard } from "@/lib/types";
 
 const STORES = [
   { name: "横浜ランドマークタワー店", tel: "0452250118", telLabel: "045-225-0118" },
@@ -51,6 +51,9 @@ export default function HomeScreen() {
   const { customer } = useAuth();
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // クーポン・スタンプ（取得できなくてもホームは表示する）
+  const [couponCount, setCouponCount] = useState(0);
+  const [stamp, setStamp] = useState<StampCard | null>(null);
 
   const loadActiveBooking = async () => {
     try {
@@ -63,14 +66,36 @@ export default function HomeScreen() {
     }
   };
 
+  /* クーポンとスタンプ。取れなくてもホームは表示する（補助的な情報のため） */
+  const loadRewards = async () => {
+    try {
+      const r = await fetchMyCoupons();
+      setCouponCount(r.available_count ?? 0);
+    } catch {
+      // 静かに無視する
+    }
+    try {
+      const st = await fetchMyStamps();
+      setStamp(st.card);
+    } catch {
+      // 静かに無視する
+    }
+  };
+
   useEffect(() => {
     track("screen_view", { screen: "home" });
     loadActiveBooking();
+    loadRewards();
   }, []);
+
+  // 画面に戻ってきたら最新にする（クーポンを使った直後など）
+  useEffect(() => {
+    if (isFocused) loadRewards();
+  }, [isFocused]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadActiveBooking();
+    await Promise.all([loadActiveBooking(), loadRewards()]);
     setRefreshing(false);
   };
 
@@ -116,6 +141,53 @@ export default function HomeScreen() {
         <View style={styles.actions}>
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
+
+        {/* 05 クーポン・スタンプのご案内（どちらか有れば出す） */}
+        {(couponCount > 0 || stamp) && (
+          <TouchableOpacity
+            style={styles.reward}
+            onPress={() => router.push("/coupons")}
+            activeOpacity={0.85}
+            accessibilityLabel="クーポンとスタンプを見る"
+          >
+            <View style={styles.rewardIcon}>
+              <Feather name="gift" size={20} color={colors.gold} />
+            </View>
+
+            <View style={styles.rewardBody}>
+              {couponCount > 0 ? (
+                <Text style={styles.rewardTitle}>
+                  ご利用いただけるクーポンが {couponCount} 枚あります
+                </Text>
+              ) : (
+                <Text style={styles.rewardTitle}>来店スタンプ</Text>
+              )}
+
+              {stamp ? (
+                <>
+                  <View style={styles.rewardBar}>
+                    <View
+                      style={[
+                        styles.rewardBarFill,
+                        { width: `${Math.min((stamp.stamps / stamp.required_count) * 100, 100)}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.rewardSub}>
+                    スタンプ {stamp.stamps} / {stamp.required_count}
+                    {stamp.remaining > 0
+                      ? `　あと ${stamp.remaining} 回で「${stamp.reward_title}」`
+                      : `　「${stamp.reward_title}」をお受け取りいただけます`}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.rewardSub}>タップしてご確認ください</Text>
+              )}
+            </View>
+
+            <Feather name="chevron-right" size={20} color={colors.textLight} />
+          </TouchableOpacity>
+        )}
 
         {/* 06 予約チケットカード（S7完了画面と同じ意匠） */}
         {activeBooking && (
@@ -294,6 +366,54 @@ const styles = StyleSheet.create({
     color: colors.goldDeep,
     lineHeight: 20,
   },
+  /* クーポン・スタンプの案内バナー */
+  reward: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radius,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+    ...shadow,
+  },
+  rewardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fdfbf6",
+  },
+  rewardBody: { flex: 1, gap: 5 },
+  rewardTitle: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  rewardSub: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    lineHeight: 18,
+  },
+  /* スタンプの進み具合を細い帯で見せる */
+  rewardBar: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    overflow: "hidden",
+  },
+  rewardBarFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: colors.gold,
+  },
+
   stores: {
     marginTop: spacing.xl,
     backgroundColor: colors.bgSub,
