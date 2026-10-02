@@ -127,16 +127,27 @@ export default function CarInputScreen() {
 
       <Text style={styles.heading}>お車の車種を{"\n"}教えてください</Text>
 
+      <Text style={styles.lead}>
+        <Text style={styles.leadStrong}>メーカー名から</Text>ご入力ください。
+        同じ車名でもメーカーによって大きさが異なるため、メーカー名があると正確に判定できます。
+      </Text>
+
       <TextInput
         value={carInput}
         onChangeText={setCarInput}
-        placeholder="例：プリウス、BMW X5"
+        placeholder="例：メルセデス・ベンツ Gクラス"
         placeholderTextColor={colors.textLight}
         style={styles.input}
         onSubmitEditing={handleJudge}
         onBlur={handleJudge}
         returnKeyType="done"
       />
+
+      <View style={styles.examples}>
+        {["メルセデス・ベンツ Gクラス", "トヨタ アルファード", "ポルシェ 911"].map((ex) => (
+          <Text key={ex} style={styles.exampleChip}>{ex}</Text>
+        ))}
+      </View>
 
       {judging && (
         <View style={styles.judgingRow}>
@@ -154,6 +165,11 @@ export default function CarInputScreen() {
             {confidence === "low" ? "（推定）" : ""}
           </Text>
           <Text style={styles.resultHint}>違う場合は下のボタンで修正できます。</Text>
+          {confidence === "low" && (
+            <Text style={styles.resultAsk}>
+              メーカー名（例：トヨタ、BMW、メルセデス・ベンツ）も入れていただくと、より正確に判定できます。
+            </Text>
+          )}
         </Card>
       )}
 
@@ -202,6 +218,39 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   retryButton: { minWidth: 160 },
+  lead: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    lineHeight: 21,
+    marginBottom: spacing.md,
+  },
+  leadStrong: { fontFamily: fonts.sansBold, color: colors.text },
+  examples: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+  exampleChip: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: colors.white,
+  },
+  resultAsk: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.goldDeep,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+
   heading: {
     fontFamily: fonts.serifJp,
     fontSize: fontSize.h2,
