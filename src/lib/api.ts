@@ -95,6 +95,8 @@ export interface RegisterParams {
   phone?: string;
   email?: string;
   existing_token?: string;
+  /** 誕生月（1〜12）。誕生日クーポンの配布に使う */
+  birth_month?: number | null;
 }
 export interface RegisterResult {
   ok: true;

@@ -16,13 +16,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { GoldButton } from "@/components/GoldButton";
 import { useAuth } from "@/lib/auth-context";
 import { registerProfile, ApiError } from "@/lib/api";
 import { registerForPushNotifications } from "@/lib/push";
-import { colors, fonts, fontSize, spacing } from "@/theme";
+import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
 export default function RegisterScreen() {
   const { signIn } = useAuth();
@@ -30,6 +31,7 @@ export default function RegisterScreen() {
   const [nameKana, setNameKana] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [birthMonth, setBirthMonth] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,6 +54,7 @@ export default function RegisterScreen() {
         name_kana: nameKana.trim() || undefined,
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
+        birth_month: birthMonth,
       });
       await signIn(result.auth_token, result.customer);
       // Stack.Protected が token の有無を見て自動的に (tabs) へ切り替える
@@ -95,6 +98,21 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             placeholder="例：you@example.com"
           />
+
+          {/* 誕生月（任意）。誕生日クーポンの配布に使う。日付は伺わない。 */}
+          <Text style={styles.monthLabel}>誕生月（ご希望の方のみ）</Text>
+          <Text style={styles.monthHint}>誕生月に使えるクーポンをお送りします。</Text>
+          <View style={styles.monthRow}>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.monthChip, birthMonth === m && styles.monthChipOn]}
+                onPress={() => setBirthMonth(birthMonth === m ? null : m)}
+              >
+                <Text style={[styles.monthChipText, birthMonth === m && styles.monthChipTextOn]}>{m}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {error && <Text style={styles.error}>{error}</Text>}
@@ -169,6 +187,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     lineHeight: 20,
   },
+  monthLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+    marginTop: spacing.md,
+  },
+  monthHint: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 2,
+    marginBottom: spacing.sm,
+  },
+  monthRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  monthChip: {
+    width: 44,
+    height: 38,
+    borderRadius: radius,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.white,
+  },
+  monthChipOn: { borderColor: colors.gold, backgroundColor: "#fdfbf6" },
+  monthChipText: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+  monthChipTextOn: { fontFamily: fonts.sansBold, color: colors.goldDeep },
+
   form: {
     gap: spacing.md,
     marginBottom: spacing.lg,
