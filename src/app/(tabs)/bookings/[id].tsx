@@ -155,7 +155,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tokenLabel: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
     letterSpacing: 1,
     color: colors.textLight,
@@ -230,7 +231,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   totalPrice: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.h3,
     color: colors.text,
   },

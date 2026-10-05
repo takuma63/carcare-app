@@ -253,11 +253,11 @@ const styles = StyleSheet.create({
   stampCard: {
     backgroundColor: colors.white,
     borderRadius: radius,
+    /* 区切りは金のヘアライン。共通の shadow（罫線）は重ねない */
     borderTopWidth: 3,
     borderTopColor: colors.gold,
     padding: spacing.md,
     marginBottom: spacing.lg,
-    ...shadow,
   },
   stampHead: {
     flexDirection: "row",
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     ...shadow,
   },
-  cardMuted: { backgroundColor: "#fafafa", shadowOpacity: 0.03, elevation: 1 },
+  cardMuted: { backgroundColor: colors.bgSub, borderTopColor: colors.border },
 
   stripe: {
     position: "absolute",

@@ -6,7 +6,7 @@
 
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, fonts, statusColors, statusLabels } from "@/theme";
+import { colors, fonts, radius, statusColors, statusLabels } from "@/theme";
 import type { BookingStatus } from "@/lib/types";
 
 export function StatusBadge({ status }: { status: BookingStatus }) {
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: radius,
   },
   text: {
     fontFamily: fonts.sansMedium,

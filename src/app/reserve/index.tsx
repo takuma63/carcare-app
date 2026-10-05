@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: radius,
     paddingVertical: 4,
     paddingHorizontal: 10,
     backgroundColor: colors.white,

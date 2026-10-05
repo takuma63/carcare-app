@@ -351,7 +351,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   dateChipDay: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.h3,
     color: colors.text,
   },

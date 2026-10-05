@@ -20,14 +20,16 @@ export const colors = {
   border: "#e4e4e4",
 } as const;
 
-export const radius = 4; // 角丸は控えめ（高級感）
+export const radius = 0; // 角丸なし。Web予約画面の --radius: 0 と揃える（2026-10-05）
 
+/* カードの区切り（2026-10-05 デザイン見直し）
+   もとは shadowOpacity:0.08 / radius:12 / offsetY:4 の淡い影だったが、
+   どのテンプレートにもある既定値で「既製品」に見えるため、影をやめて
+   1pxのヘアラインと余白で区切る方式にした。Web予約画面と同じ考え方。
+   ※ 名前は shadow のまま（使用箇所が多いため）。中身が罫線に変わっている。 */
 export const shadow = {
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 3,
+  borderTopWidth: 1,
+  borderTopColor: colors.border,
 } as const;
 
 /* フォントファミリー名（src/app/_layout.tsx で useFonts に渡すキーと揃える） */
@@ -37,6 +39,17 @@ export const fonts = {
   sans: "NotoSansJP_400Regular",
   sansMedium: "NotoSansJP_500Medium",
   sansBold: "NotoSansJP_700Bold",
+  /* 数字ロール（2026-10-05）。金額・残高・予約番号はこれを使う。
+     Cormorant Garamond は線が細く、小さい字で 1とI・0とO が紛れるため、
+     数字だけ線の太いゴシックに分ける。桁揃えは numeric とセットで使うこと。 */
+  num: "NotoSansJP_700Bold",
+} as const;
+
+/* 数字に当てるスタイル。桁が縦に揃うので金額どうしを見比べられる。
+   使い方： style={[styles.price, numeric]} */
+export const numeric = {
+  fontFamily: "NotoSansJP_700Bold",
+  fontVariant: ["tabular-nums" as const],
 } as const;
 
 /* 余白（8の倍数を基準に統一する） */

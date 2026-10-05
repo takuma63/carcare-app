@@ -361,7 +361,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   ticketNo: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: 12,
     letterSpacing: 1.5,
     color: colors.goldDeep,
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
   },
   prepaidBody: { flex: 1, gap: 2 },
   prepaidLabel: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
-  prepaidValue: { fontFamily: fonts.sansBold, fontSize: 26, color: colors.text },
+  prepaidValue: { fontFamily: fonts.num, fontVariant: ["tabular-nums"], fontSize: 26, color: colors.text },
 
   /* クーポン・スタンプの案内バナー */
   reward: {
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
   rewardIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fdfbf6",
@@ -506,7 +507,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   storeTel: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
     color: colors.goldDeep,
   },

@@ -165,7 +165,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   date: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
     color: colors.textLight,
   },
@@ -180,7 +181,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   price: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.bodyLarge,
     color: colors.text,
   },

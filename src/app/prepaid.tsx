@@ -151,7 +151,8 @@ const styles = StyleSheet.create({
   },
   balanceLabel: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
   balanceValue: {
-    fontFamily: fonts.sansBold,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: 36,
     color: colors.text,
     marginTop: spacing.xs,
@@ -178,10 +179,10 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: fonts.sansMedium, fontSize: fontSize.caption + 1, color: colors.text, lineHeight: 20 },
   rowSub: { fontFamily: fonts.sans, fontSize: 12, color: colors.textLight, lineHeight: 17 },
   rowRight: { alignItems: "flex-end", gap: 2 },
-  rowAmount: { fontFamily: fonts.sansBold, fontSize: fontSize.body },
+  rowAmount: { fontFamily: fonts.num, fontVariant: ["tabular-nums"], fontSize: fontSize.body },
   rowPlus: { color: colors.success },
   rowMinus: { color: colors.text },
-  rowBalance: { fontFamily: fonts.sans, fontSize: 12, color: colors.textLight },
+  rowBalance: { fontFamily: fonts.sans, fontVariant: ["tabular-nums"], fontSize: 12, color: colors.textLight },
 
   muted: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
   error: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.danger, marginBottom: spacing.md },

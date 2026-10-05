@@ -93,7 +93,8 @@ const styles = StyleSheet.create({
   counter: {
     marginTop: spacing.sm,
     textAlign: "center",
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
     letterSpacing: 1,
     color: colors.goldDeep,

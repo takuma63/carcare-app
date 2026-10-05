@@ -391,7 +391,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   itemPrice: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
     color: colors.textLight,
   },
@@ -456,7 +457,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   totalPrice: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.h3,
     color: colors.text,
   },

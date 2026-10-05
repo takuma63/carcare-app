@@ -393,7 +393,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   itemPrice: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.body,
     color: colors.text,
   },
@@ -513,7 +514,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomBarPrice: {
-    fontFamily: fonts.serifEn,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
     fontSize: fontSize.h3,
     color: colors.text,
   },
