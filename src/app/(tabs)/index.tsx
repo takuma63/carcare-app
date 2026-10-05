@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { fetchMyBookings, fetchMyCoupons, fetchMyStamps } from "@/lib/api";
+import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
@@ -54,6 +54,8 @@ export default function HomeScreen() {
   // クーポン・スタンプ（取得できなくてもホームは表示する）
   const [couponCount, setCouponCount] = useState(0);
   const [stamp, setStamp] = useState<StampCard | null>(null);
+  // 回数券の残高（0円・未購入のときは出さない）
+  const [prepaid, setPrepaid] = useState(0);
 
   const loadActiveBooking = async () => {
     try {
@@ -77,6 +79,12 @@ export default function HomeScreen() {
     try {
       const st = await fetchMyStamps();
       setStamp(st.card);
+    } catch {
+      // 静かに無視する
+    }
+    try {
+      const pp = await fetchMyPrepaid();
+      setPrepaid(pp.balance);
     } catch {
       // 静かに無視する
     }
@@ -142,7 +150,23 @@ export default function HomeScreen() {
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
 
-        {/* 05 クーポン・スタンプのご案内（どちらか有れば出す） */}
+        {/* 05 回数券の残高（お持ちの方だけに出す） */}
+        {prepaid > 0 && (
+          <TouchableOpacity
+            style={styles.prepaid}
+            onPress={() => router.push("/prepaid")}
+            activeOpacity={0.85}
+            accessibilityLabel="回数券の残高と履歴を見る"
+          >
+            <View style={styles.prepaidBody}>
+              <Text style={styles.prepaidLabel}>回数券の残高</Text>
+              <Text style={styles.prepaidValue}>¥{prepaid.toLocaleString("ja-JP")}</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.textLight} />
+          </TouchableOpacity>
+        )}
+
+        {/* 06 クーポン・スタンプのご案内（どちらか有れば出す） */}
         {(couponCount > 0 || stamp) && (
           <TouchableOpacity
             style={styles.reward}
@@ -366,6 +390,22 @@ const styles = StyleSheet.create({
     color: colors.goldDeep,
     lineHeight: 20,
   },
+  /* 回数券の残高カード。金額は細い書体だと数字が見分けにくいので太いゴシックにする */
+  prepaid: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    backgroundColor: colors.bgSub,
+    borderRadius: radius,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+  },
+  prepaidBody: { flex: 1, gap: 2 },
+  prepaidLabel: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+  prepaidValue: { fontFamily: fonts.sansBold, fontSize: 26, color: colors.text },
+
   /* クーポン・スタンプの案内バナー */
   reward: {
     flexDirection: "row",

@@ -11,7 +11,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import type { Booking, Coupon, Customer, MenuCategories, MenuGroup, StampCard } from "./types";
+import type { Booking, Coupon, Customer, MenuCategories, MenuGroup, PrepaidEntry, StampCard } from "./types";
 
 const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?? "";
 const TOKEN_KEY = "ccc_auth_token";
@@ -134,6 +134,16 @@ export interface MyStampsResult {
 }
 export function fetchMyStamps() {
   return request<MyStampsResult>("my-stamps");
+}
+
+/* ---------- my-prepaid（回数券の残高と履歴） ---------- */
+export interface MyPrepaidResult {
+  ok: true;
+  balance: number;
+  history: PrepaidEntry[];
+}
+export function fetchMyPrepaid() {
+  return request<MyPrepaidResult>("my-prepaid");
 }
 
 /* ---------- link-booking ---------- */

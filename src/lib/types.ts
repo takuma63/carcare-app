@@ -80,6 +80,21 @@ export interface StampCard {
   reward_description: string | null;
 }
 
+/** 回数券（前払い残高）の履歴1件（my-prepaid API） */
+export interface PrepaidEntry {
+  id: string;
+  /** 「5万円回数券」「ご利用」「取り消し」など、そのまま表示できる文言 */
+  label: string;
+  /** 増えたとき正、減ったとき負 */
+  amount: number;
+  balance_after: number;
+  shop: string | null;
+  note: string | null;
+  /** 取り消された記録（打ち消し済み。参考として残している） */
+  voided: boolean;
+  created_at: string;
+}
+
 export interface Coupon {
   grant_id: string;
   coupon_id: string;
