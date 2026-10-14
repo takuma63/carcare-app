@@ -40,9 +40,8 @@
       ]
     ],
     "extra": {
-      "_comment_API_BASE": "【一時的】Netlifyのクレジット枠切れで本番デプロイが止まっているため、10/9のデモまでは最新コードが載っている demo-- のプレビューを指す。クレジットが戻る10/10以降、https://carcare-reservation.netlify.app に必ず戻すこと。DBは同じなのでデータへの影響はない。",
-      "API_BASE": "https://demo--carcare-reservation.netlify.app/.netlify/functions",
-      "STATUS_BASE_URL": "https://demo--carcare-reservation.netlify.app",
+      "API_BASE": "https://carcare-reservation.netlify.app/.netlify/functions",
+      "STATUS_BASE_URL": "https://carcare-reservation.netlify.app",
       "STRIPE_PUBLISHABLE_KEY": "pk_test_51TsYXDCPRIas4KkohAm8FrbKXQiQECIdh7G9dsBQj5B0ws1w2M0oKEuicgakhjWWhAmOGcKlX5eSof7aapwWeqpr00XQGCtpeR"
     }
   }
