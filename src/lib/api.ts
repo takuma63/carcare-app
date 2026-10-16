@@ -66,7 +66,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if (!token) {
       throw new ApiError("認証に失敗しました。アプリを再登録してください");
     }
-    headers.authorization = `Bearer ${token}`;
+    // Azure Static Web Apps は Authorization ヘッダーを自前のトークンで上書きするため、
+    // 専用ヘッダーで送る（サーバー側のアダプタが Authorization に積み替える）
+    headers["x-auth-token"] = token;
   }
 
   let res: Response;
