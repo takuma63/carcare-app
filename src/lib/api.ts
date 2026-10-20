@@ -148,6 +148,13 @@ export function fetchMyPrepaid() {
   return request<MyPrepaidResult>("my-prepaid");
 }
 
+/* ---------- my-delete-account（アカウントの削除） ---------- */
+/** Appleのガイドライン 5.1.1(v) で必須。アプリのログイン情報だけを消し、
+ *  顧客台帳・来店履歴・回数券の残高は店舗の業務記録として残る。 */
+export function deleteMyAccount() {
+  return request<{ ok: true }>("my-delete-account", { body: { confirm: "delete" } });
+}
+
 /* ---------- link-booking ---------- */
 export interface LinkBookingResult {
   ok: true;
