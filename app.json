@@ -11,8 +11,12 @@
       "typedRoutes": true
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "jp.co.carcarecenter.app"
+      "supportsTablet": false,
+      "bundleIdentifier": "jp.co.carcarecenter.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "jp.co.carcarecenter.app",
@@ -41,8 +45,7 @@
     ],
     "extra": {
       "API_BASE": "https://reserve.carcare-center.co.jp/api",
-      "STATUS_BASE_URL": "https://reserve.carcare-center.co.jp",
-      "STRIPE_PUBLISHABLE_KEY": "pk_test_51TsYXDCPRIas4KkohAm8FrbKXQiQECIdh7G9dsBQj5B0ws1w2M0oKEuicgakhjWWhAmOGcKlX5eSof7aapwWeqpr00XQGCtpeR"
+      "STATUS_BASE_URL": "https://reserve.carcare-center.co.jp"
     }
   }
 }

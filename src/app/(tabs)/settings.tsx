@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 import { deleteMyAccount, ApiError } from "@/lib/api";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
-const PRIVACY_URL = "https://carcare-center.co.jp/privacy/app/";
+const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 export default function SettingsScreen() {
   const { customer, signOut } = useAuth();

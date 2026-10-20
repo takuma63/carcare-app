@@ -305,21 +305,25 @@ export default function ConfirmScreen() {
             </View>
             <Text style={styles.paymentText}>店頭でお支払い</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.paymentRow, !onlineAvailable && styles.paymentDisabled]}
-            onPress={() => onlineAvailable && setPayMethod("online")}
-            disabled={!onlineAvailable}
-          >
-            <View style={[styles.radio, payMethod === "online" && styles.radioOn]}>
-              {payMethod === "online" && <View style={styles.radioDot} />}
-            </View>
-            <Text style={[styles.paymentText, !onlineAvailable && styles.paymentTextDisabled]}>
-              今すぐ決済（クレジットカード / Apple Pay / Google Pay）
-            </Text>
-            {!onlineAvailable && (
-              <Text style={styles.comingSoon}>{STRIPE_ENABLED ? "店頭払いのみ" : "近日対応"}</Text>
-            )}
-          </TouchableOpacity>
+          {/* 事前決済は鍵が設定されているときだけ出す。
+              鍵が無いときに「近日対応」の押せない行を残すと、Appleの審査で
+              未完成の画面（Guideline 2.1）と見なされる恐れがあるため、
+              行ごと出さない。経緯は STRIPE-HOLD.md を参照。 */}
+          {STRIPE_ENABLED && (
+            <TouchableOpacity
+              style={[styles.paymentRow, !onlineAvailable && styles.paymentDisabled]}
+              onPress={() => onlineAvailable && setPayMethod("online")}
+              disabled={!onlineAvailable}
+            >
+              <View style={[styles.radio, payMethod === "online" && styles.radioOn]}>
+                {payMethod === "online" && <View style={styles.radioDot} />}
+              </View>
+              <Text style={[styles.paymentText, !onlineAvailable && styles.paymentTextDisabled]}>
+                今すぐ決済（クレジットカード / Apple Pay / Google Pay）
+              </Text>
+              {!onlineAvailable && <Text style={styles.comingSoon}>店頭払いのみ</Text>}
+            </TouchableOpacity>
+          )}
           {payMethod === "online" && (
             <Text style={styles.paymentNote}>
               「予約を確定する」を押すと決済画面が開きます。決済完了と同時にご予約が確定します。
