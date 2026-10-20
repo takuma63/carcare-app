@@ -20,7 +20,11 @@
   "submit": {
     "production": {
       "ios": {
-        "bundleIdentifier": "jp.co.carcarecenter.app"
+        "bundleIdentifier": "jp.co.carcarecenter.app",
+        "appName": "カーケアセンター",
+        "companyName": "株式会社カーケアセンター",
+        "language": "ja",
+        "sku": "carcare-center-app"
       }
     }
   }
