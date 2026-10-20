@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "カーケアセンター",
+    "owner": "car-care-centerkk",
     "slug": "carcare-center-app",
     "scheme": "carcarecenter",
     "version": "1.0.0",
@@ -45,7 +46,11 @@
     ],
     "extra": {
       "API_BASE": "https://reserve.carcare-center.co.jp/api",
-      "STATUS_BASE_URL": "https://reserve.carcare-center.co.jp"
+      "STATUS_BASE_URL": "https://reserve.carcare-center.co.jp",
+      "router": {},
+      "eas": {
+        "projectId": "5d48e86a-3297-4f91-8b9f-d1efb63db308"
+      }
     }
   }
 }
