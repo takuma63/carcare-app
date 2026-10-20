@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,12 @@ import { useAuth } from "@/lib/auth-context";
 import { registerProfile, ApiError } from "@/lib/api";
 import { registerForPushNotifications } from "@/lib/push";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
+
+/* ★ 個人情報保護法 第21条第2項：本人から直接（この入力フォームを含む）
+   個人情報を取得するときは、あらかじめ利用目的を明示しなければならない。
+   「公表」だけでは足りないため、登録ボタンの直前に利用目的とポリシーへの
+   導線を置いている。設定画面のリンクと同じURL。 */
+const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 export default function RegisterScreen() {
   const { signIn } = useAuth();
@@ -116,6 +123,15 @@ export default function RegisterScreen() {
         </View>
 
         {error && <Text style={styles.error}>{error}</Text>}
+
+        <Text style={styles.consent}>
+          ご入力いただいた情報は、ご予約の受付・ご連絡、回数券やクーポンの管理に利用します。
+          「はじめる」を押すと、
+          <Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
+            プライバシーポリシー
+          </Text>
+          に同意いただいたものとします。
+        </Text>
 
         <GoldButton title="はじめる" onPress={handleSubmit} loading={submitting} style={styles.button} />
       </ScrollView>
@@ -248,6 +264,18 @@ const styles = StyleSheet.create({
     color: colors.danger,
     marginBottom: spacing.md,
     textAlign: "center",
+  },
+  consent: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    lineHeight: 18,
+    color: colors.textLight,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  consentLink: {
+    color: colors.goldDeep,
+    textDecorationLine: "underline",
   },
   button: {
     marginTop: spacing.sm,
