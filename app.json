@@ -16,7 +16,9 @@
       "bundleIdentifier": "jp.co.carcarecenter.app",
       "buildNumber": "3",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "お支払い時に、クレジットカード番号をカメラで読み取る場合に使用します。",
+        "NSFaceIDUsageDescription": "ログイン情報を安全に保管するために使用します。"
       }
     },
     "android": {
