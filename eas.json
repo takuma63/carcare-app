@@ -24,7 +24,8 @@
         "appName": "カーケアセンター",
         "companyName": "株式会社カーケアセンター",
         "language": "ja",
-        "sku": "carcare-center-app"
+        "sku": "carcare-center-app",
+        "ascAppId": "6825233640"
       }
     }
   }
