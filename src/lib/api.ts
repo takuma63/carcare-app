@@ -14,6 +14,13 @@ import * as SecureStore from "expo-secure-store";
 import type { Booking, Coupon, Customer, MenuCategories, MenuGroup, PrepaidEntry, StampCard } from "./types";
 
 const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?? "";
+
+/* ★ 車種判定だけ接続先が違う
+   Anthropic が東アジア（予約システムが動いている地域）からのアクセスを
+   拒否するため、この処理だけ日本東リージョンの別アプリに分けてある。
+   経緯は carcare-reservation/ask-jp/README.md。
+   Web予約側（reserve.js の ASK_ENDPOINT）も同じURLを見ている。 */
+const ASK_URL = (Constants.expoConfig?.extra?.ASK_URL as string | undefined) ?? "";
 const TOKEN_KEY = "ccc_auth_token";
 
 export class ApiError extends Error {}
@@ -143,10 +150,21 @@ export function updateProfile(params: RegisterParams) {
   return request<RegisterResult>("app-register", { body: params });
 }
 
-/* ---------- my-bookings ---------- */
+/* ---------- my-bookings（ご利用履歴：予約＋来店） ----------
+   ★ visits は店舗が記録したご来店。予約（bookings）はアプリ・Webから
+     予約したときだけ作られるため、長年の常連のお客様ほど予約が0件になる。
+     両方を1つの履歴として見せる（サーバー側の my-bookings.js 冒頭を参照）。 */
+export interface Visit {
+  id: string;
+  /** YYYY-MM-DD（タイムゾーンでずれないよう文字列で受け取る） */
+  visited_on: string;
+  shop: string;
+  service_note: string | null;
+}
 export interface MyBookingsResult {
   ok: true;
   bookings: Booking[];
+  visits: Visit[];
 }
 export function fetchMyBookings() {
   return request<MyBookingsResult>("my-bookings");
@@ -260,15 +278,32 @@ export async function fetchMenu(): Promise<MenuResult> {
   }
 }
 
-/* ---------- ask（既存 ask.js をそのまま流用。S3車種判定用） ---------- */
+/* ---------- ask（S3 車種判定）----------
+   ★ 他のAPIと違い API_BASE を使わない（上の ASK_URL の注記を参照）。
+     request() を通さず、ここだけ個別に組み立てている。 */
 export interface AskResult {
   content?: { text: string }[];
 }
-export function askAI(system: string, userText: string) {
-  return request<AskResult>("ask", {
-    body: { system, messages: [{ role: "user", content: userText }] },
-    auth: false,
-  });
+export async function askAI(system: string, userText: string): Promise<AskResult> {
+  if (!ASK_URL) throw new ApiError("車種判定をご利用いただけません。お手数ですが車種をお選びください。");
+
+  let res: Response;
+  try {
+    res = await fetch(ASK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ system, messages: [{ role: "user", content: userText }] }),
+    });
+  } catch {
+    throw new ApiError("通信エラーが発生しました。ネットワークをご確認ください。");
+  }
+
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    const message = typeof data.error === "string" ? data.error : "車種を判定できませんでした。";
+    throw new ApiError(message);
+  }
+  return data as AskResult;
 }
 
 /* ---------- slots（既存 slots.js をそのまま流用。S5空き時間取得用） ---------- */

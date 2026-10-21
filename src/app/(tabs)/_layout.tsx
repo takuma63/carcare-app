@@ -1,6 +1,6 @@
 /* ============================================================
    (tabs)/_layout.tsx  ―  タブ構成（SPEC.md §4.1）
-   タブは4つ：ホーム / 予約履歴 / クーポン / 設定
+   タブは4つ：ホーム / 利用履歴 / クーポン / 設定
    デザイン提案05適用：上ボーダーを消して上向きの淡い影で浮かせ、
    アクティブタブに金の小さなドットを添える。
 ============================================================ */
@@ -57,7 +57,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: "予約履歴",
+          title: "利用履歴",
           tabBarIcon: ({ color, focused }) => <TabIcon name="calendar" color={color} focused={focused} />,
         }}
       />
