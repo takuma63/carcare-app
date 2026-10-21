@@ -90,23 +90,57 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return data as T;
 }
 
-/* ---------- app-register ---------- */
+/* ---------- app-login（Entraで本人確認を終えた方の入口） ----------
+   Entraが発行したIDトークンを送ると、サーバーが署名を検証して
+   顧客台帳に紐づけ、以降のAPIで使うセッショントークンを返す。
+   パスワードはここを通らない。 */
+export interface LoginParams {
+  id_token: string;
+  /** 初回のみ。アプリの登録画面で入力・確認いただいた内容 */
+  name?: string;
+  name_kana?: string;
+  phone?: string;
+  birth_month?: number | null;
+}
+export interface LoginResult {
+  ok: true;
+  auth_token: string;
+  customer: Customer;
+}
+export function loginWithEntra(params: LoginParams) {
+  return request<LoginResult>("app-login", { body: params, auth: false });
+}
+
+/* ---------- app-link（電話番号で既存のお客様を照合） ----------
+   「山田 太郎 様ですか？」の確認に使う。
+   セッション発行前なのでEntraのIDトークンで本人確認する。 */
+export interface LinkLookupResult {
+  found: boolean;
+  name?: string;
+  name_kana?: string;
+  phone_masked?: string;
+}
+export function lookupByPhone(idToken: string, phone: string) {
+  return request<LinkLookupResult>("app-link", {
+    body: { id_token: idToken, phone },
+    auth: false,
+  });
+}
+
+/* ---------- app-register（プロフィールの更新。新規登録には使わない） ---------- */
 export interface RegisterParams {
   name: string;
   name_kana?: string;
   phone?: string;
-  email?: string;
-  existing_token?: string;
   /** 誕生月（1〜12）。誕生日クーポンの配布に使う */
   birth_month?: number | null;
 }
 export interface RegisterResult {
   ok: true;
-  auth_token: string;
   customer: Customer;
 }
-export function registerProfile(params: RegisterParams) {
-  return request<RegisterResult>("app-register", { body: params, auth: false });
+export function updateProfile(params: RegisterParams) {
+  return request<RegisterResult>("app-register", { body: params });
 }
 
 /* ---------- my-bookings ---------- */
