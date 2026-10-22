@@ -104,28 +104,82 @@ https://reserve.carcare-center.co.jp/privacy-app.html
 
 ## 審査担当者向けのメモ（App Review Information → Notes）
 
+★ 2026-10-22 全面改訂。
+  以前の版は「パスワードは使用しません」と書いてあったが、
+  Microsoft Entra External ID へ移行してパスワード必須になったため、
+  そのまま出すと審査で事実と食い違う。
+
 ```
-このアプリは、日本国内5店舗の洗車・コーティング店の予約アプリです。
+This app is the official booking app for CAR CARE CENTER, a car wash and
+coating service with five locations in Japan (Yokohama, Tokyo).
+The app is in Japanese only.
 
-【会員登録について】
-パスワードは使用しません。お名前とご連絡先（電話番号またはメールアドレス）の
-入力のみで登録が完了します。テスト用のアカウントは不要で、任意の情報で
-ご登録いただけます。
+SIGN-IN IS REQUIRED
+Please use the demo account provided in the fields above.
+Accounts are managed by Microsoft Entra External ID. Sign-in requires an
+email address and a password. New sign-ups also require a verification
+code sent by email, so please use the demo account rather than creating
+a new one.
 
-【ご予約の作成について】
-本アプリのご予約は実際の店舗システムに登録されます。
-動作確認のためにご予約を作成いただいて構いませんが、
-完了まで進めていただく必要はありません。
-作成されたご予約は当社にて削除いたします。
+WHAT YOU CAN DO WITH THE DEMO ACCOUNT
+- Home: booking status, registered vehicles, store list
+- Booking flow (4 steps): vehicle category, menu, store and date/time,
+  confirmation
+- Announcements, coupons, visit history
+- Settings: profile, notifications, account deletion
 
-【アカウントの削除】
-設定タブ内の「アカウントを削除」からご利用いただけます。
-（App Store Review Guideline 5.1.1(v) への対応）
+ABOUT CREATING A BOOKING
+Bookings made in the app are written to the live store system.
+You may create one to verify the flow; we will delete it afterwards.
+There is no payment step in the app. All payments are made in store.
 
-【コーティングメニューについて】
-コーティングは作業内容のお打ち合わせが必要なため、
-アプリ上では内容の表示のみとし、ご予約はお電話で承る設計としています。
+ACCOUNT DELETION
+Settings tab -> "アカウントを削除" (Delete account).
+This satisfies App Store Review Guideline 5.1.1(v).
+
+ABOUT THE COATING MENU
+Coating work requires an in-person consultation, so the app only shows
+the menu contents; those bookings are taken by phone.
 ```
+
+### 審査担当者用のデモアカウント
+
+| 項目 | 値 |
+|---|---|
+| Sign-in required | ✔ チェックを入れる |
+| User Name | `appreview@carcarecenterapp.onmicrosoft.com` |
+| Password | **この文書には書かない**（下記） |
+
+★ パスワードをこのファイルに書かないこと。
+  GitHubに上がるため。App Store Connect に入力したら、そこが保管場所になる。
+  紛失したときは Microsoft Entra 管理センター（外部テナント
+  carcarecenterapp）でリセットするか、Graph API で再設定する。
+
+デモアカウントの素性（2026-10-22 作成）：
+- Entra のオブジェクトID：`b6826efb-ae03-4fe0-b905-c619b1607f51`
+- 当社側の顧客ID：`035fa5e9…`（お名前「App Review」）
+- 実在のお客様ではない。来店履歴・回数券残高は持たせていない
+- **公開後に削除する**（公開前チェックの項目に入れてある）
+
+---
+
+## TestFlight の外部公開（Beta App Review）
+
+内部テストは審査なしで配信できるが、**外部公開には Beta App Review が要る**
+（通常1営業日ほど）。App Store Connect での手順：
+
+1. **TestFlight** タブ →「テスター とグループ」→ **＋** で外部グループを作る
+   （名前の例：`公開テスト`）
+2. 作ったグループに、処理の終わったビルドを **＋** で追加する
+3. 追加した時点で「テスト情報」の入力を求められる。上の Notes と
+   デモアカウントを入れる
+4. 連絡先（氏名・メール・電話）を入れる。審査で連絡が要るときに使われる
+5. **「何をテストすればよいか」**（What to Test）に、そのビルドで見てほしい点を書く
+6. 提出すると審査に入る。通ると「公開リンク」を有効にでき、
+   誰でもそのURLからインストールできるようになる
+
+★ 公開リンクは **誰でもインストールできる**（最大10,000人）。
+  社長や店舗の方に配るだけなら、メールで招待する形でも足りる。
 
 ---
 
