@@ -26,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps, fetchMyVehicles, type Vehicle } from "@/lib/api";
+import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps, fetchMyVehicles, fetchMyAnnouncements, type Vehicle } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
@@ -42,6 +42,26 @@ const STORES = [
 
 const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
 
+/* 作業の進み具合を3段階で見せる。管理画面で店舗が状態を進めると、
+   お客様の画面にも反映される（完了時はプッシュ通知も飛ぶ）。 */
+const STEPS: { key: string; label: string }[] = [
+  { key: "confirmed", label: "ご予約" },
+  { key: "in_progress", label: "作業中" },
+  { key: "done", label: "完了" },
+];
+function stepIndex(status: string): number {
+  if (status === "done") return 2;
+  if (status === "in_progress") return 1;
+  return 0;
+}
+function isToday(iso: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -55,12 +75,19 @@ export default function HomeScreen() {
   // 回数券の残高（0円・未購入のときは出さない）
   const [prepaid, setPrepaid] = useState(0);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [unread, setUnread] = useState(0);
 
   const loadActiveBooking = async () => {
     try {
       const { bookings } = await fetchMyBookings();
-      // 進行中＝有効な状態、かつ「作業完了のお知らせ」がまだ送られていない予約
-      const active = bookings.find((b) => ACTIVE_STATUSES.has(b.status) && !b.completed_at) ?? null;
+      /* 進行中のご予約。
+         ★ 当日ぶんは「完了」になっても、その日のうちは出し続ける
+           （2026-10-22）。以前は完了した時点で消えていたが、
+           お客様は「終わったこと」を画面で確かめたい。 */
+      const active =
+        bookings.find((b) => ACTIVE_STATUSES.has(b.status) && !b.completed_at) ??
+        bookings.find((b) => b.status === "done" && isToday(b.completed_at ?? b.preferred_at)) ??
+        null;
       setActiveBooking(active);
     } catch {
       // ホーム画面では通信エラーを静かに無視する（他の情報は表示できるため）
@@ -90,6 +117,12 @@ export default function HomeScreen() {
     try {
       const v = await fetchMyVehicles();
       setVehicles(v.selected);
+    } catch {
+      // 静かに無視する
+    }
+    try {
+      const an = await fetchMyAnnouncements();
+      setUnread(an.unread);
     } catch {
       // 静かに無視する
     }
@@ -249,12 +282,46 @@ export default function HomeScreen() {
               <View style={styles.ticketDash} />
               <Text style={styles.ticketMenu}>{primaryMenuName(activeBooking)}</Text>
               <Text style={styles.ticketSub}>{activeBooking.shop ?? "店舗未定"}</Text>
+
+              {/* 作業の進み具合。店舗が管理画面で状態を進めると、ここが動く */}
+              <View style={styles.steps}>
+                {STEPS.map((st, i) => {
+                  const now = stepIndex(activeBooking.status);
+                  const reached = i <= now;
+                  return (
+                    <View key={st.key} style={styles.step}>
+                      {i > 0 ? <View style={[styles.stepLine, reached && styles.stepLineOn]} /> : null}
+                      <View style={[styles.stepDot, reached && styles.stepDotOn]} />
+                      <Text style={[styles.stepLabel, reached && styles.stepLabelOn]}>{st.label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
               {isWorking && (
                 <Text style={styles.ticketNotice}>作業中です。完了したら通知でお知らせします。</Text>
+              )}
+              {activeBooking.status === "done" && (
+                <Text style={styles.ticketDone}>本日の作業が完了しました。ありがとうございました。</Text>
               )}
             </View>
           </TouchableOpacity>
         )}
+
+        {/* 05 お知らせ。リピーター施策の中心なので、未読があるときは目立たせる
+            （announcements.tsx 冒頭を参照） */}
+        <TouchableOpacity
+          style={styles.news}
+          onPress={() => router.push("/announcements")}
+          activeOpacity={0.85}
+          accessibilityLabel="お知らせを開く"
+        >
+          <Feather name="bell" size={18} color={unread > 0 ? colors.goldDeep : colors.textLight} />
+          <Text style={[styles.newsText, unread > 0 && styles.newsTextOn]}>
+            {unread > 0 ? `未読のお知らせが${unread}件あります` : "お知らせ"}
+          </Text>
+          <Feather name="chevron-right" size={18} color={colors.textLight} />
+        </TouchableOpacity>
 
         {/* 04 店舗一覧（淡灰の帯＋白カード行） */}
         <View style={styles.stores}>
@@ -357,6 +424,56 @@ const styles = StyleSheet.create({
   carMain: { flex: 1 },
   carName: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
   carPlate: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+
+  /* 作業の進み具合 */
+  steps: { flexDirection: "row", marginTop: spacing.md },
+  step: { flex: 1, alignItems: "center" },
+  stepLine: {
+    position: "absolute",
+    top: 5,
+    right: "50%",
+    left: "-50%",
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.28)",
+  },
+  stepLineOn: { backgroundColor: colors.goldLight },
+  stepDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
+  stepDotOn: { backgroundColor: colors.goldLight },
+  stepLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: "rgba(255,255,255,0.5)",
+    marginTop: 5,
+  },
+  stepLabelOn: { color: colors.white },
+  ticketDone: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.goldLight,
+    marginTop: spacing.sm,
+  },
+
+  /* お知らせ */
+  news: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+  },
+  newsText: { flex: 1, fontFamily: fonts.sans, fontSize: fontSize.body, color: colors.textLight },
+  newsTextOn: { fontFamily: fonts.sansMedium, color: colors.text },
   ticket: {
     marginTop: spacing.md,
     marginHorizontal: spacing.lg,

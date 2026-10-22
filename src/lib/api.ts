@@ -150,6 +150,32 @@ export function updateProfile(params: RegisterParams) {
   return request<RegisterResult>("app-register", { body: params });
 }
 
+/* ---------- my-announcements（お知らせ） ----------
+   リピーター施策の中心。コーティングから1年・洗車から1ヶ月などの
+   条件で店舗から届く（サーバー側の _announcements.js 冒頭を参照）。 */
+export interface Announcement {
+  id: string;
+  target_id: string;
+  title: string;
+  body: string;
+  /** 配信日（YYYY-MM-DD） */
+  sent_on: string | null;
+  read_at: string | null;
+}
+export interface AnnouncementsResult {
+  ok: true;
+  announcements: Announcement[];
+  unread: number;
+}
+export function fetchMyAnnouncements() {
+  return request<AnnouncementsResult>("my-announcements", { body: { action: "list" } });
+}
+export function markAnnouncementRead(announcementId: string) {
+  return request<AnnouncementsResult>("my-announcements", {
+    body: { action: "read", announcement_id: announcementId },
+  });
+}
+
 /* ---------- my-vehicles（おもちのお車） ----------
    vehicles には店舗が記録してきた車が全部入っており、乗り換えた方も多い。
    お客様ご自身に選んでいただいたものだけを「今おもちのお車」として扱う
