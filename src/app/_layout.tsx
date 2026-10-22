@@ -12,6 +12,7 @@ import { Stack, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@/lib/stripe";
 import { useFonts as useCormorantFonts, CormorantGaramond_600SemiBold } from "@expo-google-fonts/cormorant-garamond";
 import { useFonts as useNotoSerifFonts, NotoSerifJP_600SemiBold } from "@expo-google-fonts/noto-serif-jp";
@@ -119,6 +120,12 @@ function RootNavigator() {
   );
 }
 
+/* 起動画面（白地にロゴ）を、書体が揃うまで出したままにする。
+   これをしないと、起動画面 → 読み込み中のぐるぐる → 本画面 と
+   一瞬ちらつく。消えるときは短くフェードさせる。 */
+SplashScreen.preventAutoHideAsync().catch(() => { /* 既に消えている場合 */ });
+SplashScreen.setOptions?.({ duration: 320, fade: true });
+
 export default function RootLayout() {
   const [cormorantLoaded] = useCormorantFonts({ CormorantGaramond_600SemiBold });
   const [notoSerifLoaded] = useNotoSerifFonts({ NotoSerifJP_600SemiBold });
@@ -129,6 +136,11 @@ export default function RootLayout() {
     startAnalytics();
   }, []);
 
+  useEffect(() => {
+    if (fontsReady) SplashScreen.hideAsync().catch(() => { /* 既に消えている場合 */ });
+  }, [fontsReady]);
+
+  // 起動画面が出たままなので普段は見えない。消せなかったときの受け皿として残す。
   if (!fontsReady) return <LoadingView />;
 
   const app = (
