@@ -150,6 +150,52 @@ export function updateProfile(params: RegisterParams) {
   return request<RegisterResult>("app-register", { body: params });
 }
 
+/* ---------- my-vehicles（おもちのお車） ----------
+   vehicles には店舗が記録してきた車が全部入っており、乗り換えた方も多い。
+   お客様ご自身に選んでいただいたものだけを「今おもちのお車」として扱う
+   （サーバー側の my-vehicles.js 冒頭を参照）。 */
+export interface Vehicle {
+  id: string;
+  /** 「トヨタ ハリアー」のような表示用の名前 */
+  title: string;
+  maker: string | null;
+  model: string | null;
+  color: string | null;
+  /** 「横浜 330 な 1234」のようにつないだナンバー */
+  plate: string | null;
+  selected: boolean;
+  /** そのお車での最後のご来店日（YYYY-MM-DD） */
+  last_visited_on: string | null;
+}
+export interface VehiclesResult {
+  ok: true;
+  /** 今おもちのお車（ホーム画面に出す） */
+  selected: Vehicle[];
+  /** 過去に記録のあるお車（履歴から選ぶときに出す） */
+  history: Vehicle[];
+}
+export function fetchMyVehicles() {
+  return request<VehiclesResult>("my-vehicles", { body: { action: "list" } });
+}
+export function selectVehicle(vehicleId: string) {
+  return request<VehiclesResult>("my-vehicles", { body: { action: "select", vehicle_id: vehicleId } });
+}
+export function unselectVehicle(vehicleId: string) {
+  return request<VehiclesResult>("my-vehicles", { body: { action: "unselect", vehicle_id: vehicleId } });
+}
+export interface AddVehicleParams {
+  maker?: string;
+  model?: string;
+  color?: string;
+  plate_area?: string;
+  plate_class?: string;
+  plate_hiragana?: string;
+  plate_number?: string;
+}
+export function addVehicle(params: AddVehicleParams) {
+  return request<VehiclesResult>("my-vehicles", { body: { action: "add", ...params } });
+}
+
 /* ---------- my-bookings（ご利用履歴：予約＋来店） ----------
    ★ visits は店舗が記録したご来店。予約（bookings）はアプリ・Webから
      予約したときだけ作られるため、長年の常連のお客様ほど予約が0件になる。

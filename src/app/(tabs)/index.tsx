@@ -22,12 +22,11 @@ import {
 import { useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps } from "@/lib/api";
+import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps, fetchMyVehicles, type Vehicle } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
@@ -42,7 +41,6 @@ const STORES = [
 ];
 
 const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
-const HERO_HEIGHT = 360;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -56,6 +54,7 @@ export default function HomeScreen() {
   const [stamp, setStamp] = useState<StampCard | null>(null);
   // 回数券の残高（0円・未購入のときは出さない）
   const [prepaid, setPrepaid] = useState(0);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const loadActiveBooking = async () => {
     try {
@@ -85,6 +84,12 @@ export default function HomeScreen() {
     try {
       const pp = await fetchMyPrepaid();
       setPrepaid(pp.balance);
+    } catch {
+      // 静かに無視する
+    }
+    try {
+      const v = await fetchMyVehicles();
+      setVehicles(v.selected);
     } catch {
       // 静かに無視する
     }
@@ -118,23 +123,11 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.white} />}
       >
-        {/* 01 フルブリードヒーロー */}
-        <View style={styles.hero}>
-          <Image source={require("@/assets/hero.jpg")} style={styles.heroImage} resizeMode="cover" />
-          <LinearGradient
-            colors={["rgba(0,0,0,0.34)", "rgba(0,0,0,0.04)", "rgba(12,12,12,0.82)"]}
-            locations={[0, 0.42, 1]}
-            style={styles.heroImage}
-          />
-          <Image
-            source={require("@/assets/logo.png")}
-            style={[styles.heroLogo, { top: insets.top + 10 }]}
-            resizeMode="contain"
-          />
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroTagline}>Membership Car Wash Lounge</Text>
-            <Text style={styles.heroTitle}>光を纏う、{"\n"}究極の仕上がり</Text>
-          </View>
+        {/* 01 ヒーロー：黒地にロゴだけを置く。
+            写真は「どの車を出すか」で印象が偏るうえ、ロゴが小さく埋もれていた。
+            黒・金・明朝という世界観は、余白とロゴの大きさで出す。 */}
+        <View style={[styles.hero, { paddingTop: insets.top + spacing.xxl }]}>
+          <Image source={require("@/assets/logo.png")} style={styles.heroLogo} resizeMode="contain" />
         </View>
 
         {/* 03 挨拶（アイブロウ構造） */}
@@ -149,6 +142,36 @@ export default function HomeScreen() {
         <View style={styles.actions}>
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
+
+        {/* 04 おもちのお車。
+            ご登録が無い方には案内を出す。乗り換えの多い業態なので、
+            ご来店の記録から自分で選んでいただく（vehicles.tsx 冒頭を参照）。 */}
+        <TouchableOpacity
+          style={styles.cars}
+          onPress={() => router.push("/vehicles")}
+          activeOpacity={0.85}
+          accessibilityLabel="お車の登録を開く"
+        >
+          <View style={styles.carsHead}>
+            <Text style={styles.carsTitle}>お車</Text>
+            <Feather name="chevron-right" size={18} color={colors.textLight} />
+          </View>
+          {vehicles.length === 0 ? (
+            <Text style={styles.carsEmpty}>
+              おもちのお車をご登録ください。ご予約のときに選べるようになります。
+            </Text>
+          ) : (
+            vehicles.map((v) => (
+              <View key={v.id} style={styles.carRow}>
+                <Feather name="disc" size={16} color={colors.gold} />
+                <View style={styles.carMain}>
+                  <Text style={styles.carName}>{v.title}</Text>
+                  {v.plate ? <Text style={styles.carPlate}>{v.plate}</Text> : null}
+                </View>
+              </View>
+            ))
+          )}
+        </TouchableOpacity>
 
         {/* 05 回数券の残高（お持ちの方だけに出す） */}
         {prepaid > 0 && (
@@ -271,52 +294,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   content: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   hero: {
-    height: HERO_HEIGHT,
     backgroundColor: colors.dark,
-    overflow: "hidden",
+    alignItems: "center",
+    paddingBottom: spacing.xl,
   },
-  /* StyleSheet.absoluteFillの直接指定だと画像がヒーロー枠を突き抜けて
-     下のセクションまで描画される事象が実機で出たため、明示指定にしている */
-  heroImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
-  },
+  /* ロゴは中央に大きく。横幅いっぱいまで広げず、左右に余白を残すことで
+     高級感が出る（詰めるほど安っぽくなる）。 */
+  /* ロゴには「Membership Car Wash Lounge」が入っているので、
+     下に同じ文言を置かない。ロゴ1つと余白だけで見せる。 */
   heroLogo: {
-    position: "absolute",
-    alignSelf: "center",
-    width: 132,
-    height: 32,
+    width: "72%",
+    height: 118,
     tintColor: colors.white,
-    opacity: 0.96,
-  },
-  heroCopy: {
-    position: "absolute",
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: spacing.lg,
-  },
-  heroTagline: {
-    fontFamily: fonts.serifEn,
-    fontSize: 11,
-    letterSpacing: 4,
-    color: colors.goldLight,
-    textTransform: "uppercase",
-    marginBottom: spacing.sm,
-  },
-  heroTitle: {
-    fontFamily: fonts.serifJp,
-    fontSize: 27,
-    color: colors.white,
-    lineHeight: 40,
-    letterSpacing: 1,
   },
   greet: {
     paddingHorizontal: spacing.lg,
@@ -342,6 +334,29 @@ const styles = StyleSheet.create({
   actionMain: {
     width: "100%",
   },
+  cars: {
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  carsHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  carsTitle: { fontFamily: fonts.serifJp, fontSize: fontSize.h3, color: colors.text },
+  carsEmpty: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    lineHeight: 19,
+    color: colors.textLight,
+  },
+  carRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  carMain: { flex: 1 },
+  carName: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
+  carPlate: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
   ticket: {
     marginTop: spacing.md,
     marginHorizontal: spacing.lg,

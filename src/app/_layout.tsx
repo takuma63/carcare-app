@@ -108,6 +108,7 @@ function RootNavigator() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="reserve" options={{ presentation: "modal" }} />
           <Stack.Screen name="prepaid" />
+          <Stack.Screen name="vehicles" />
         </Stack.Protected>
         <Stack.Protected guard={!token}>
           <Stack.Screen name="(onboarding)" />
