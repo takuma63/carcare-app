@@ -165,6 +165,29 @@ the menu contents; those bookings are taken by phone.
 
 ## TestFlight の外部公開（Beta App Review）
 
+### 提出済み（2026-10-22）
+
+| 項目 | 内容 |
+|---|---|
+| ビルド | 1.0.0 (8) |
+| グループ | 公開テスト（外部・公開リンク有効） |
+| **公開リンク** | https://testflight.apple.com/join/HjH3PUYU |
+| 状態 | WAITING_FOR_REVIEW（審査待ち） |
+| 連絡先 | 三宅 拓磨 / kanri_system@carcare-center.co.jp / +81-6-6267-8288 |
+| デモアカウント | `appreview@carcarecenterapp.onmicrosoft.com`（パスワードはASCに保管） |
+
+★ 公開リンクは**審査が通るまで開けない**。通ればこのURLで誰でも入れる。
+
+★ App Store Connect API を使って提出した。鍵は作業用の一時領域に置いてあり、
+  リポジトリには入れていない。**使い終わったら失効（Revoke）させること。**
+  - Key ID: `2AR4296XNJ` ／ Issuer ID: `5dfb8b13-2078-4d46-b1f7-4182c601b1a6`
+  - `~/Downloads/AuthKey_2AR4296XNJ.p8` にも残っている。削除しておく
+
+---
+
+## 手順（参考）
+
+
 内部テストは審査なしで配信できるが、**外部公開には Beta App Review が要る**
 （通常1営業日ほど）。App Store Connect での手順：
 
