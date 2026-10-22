@@ -209,9 +209,9 @@ export function markAnnouncementRead(announcementId: string) {
   });
 }
 
-/* ---------- my-vehicles（おもちのお車） ----------
+/* ---------- my-vehicles（お持ちの車両） ----------
    vehicles には店舗が記録してきた車が全部入っており、乗り換えた方も多い。
-   お客様ご自身に選んでいただいたものだけを「今おもちのお車」として扱う
+   お客様ご自身に選んでいただいたものだけを「所有している車両」として扱う
    （サーバー側の my-vehicles.js 冒頭を参照）。 */
 export interface Vehicle {
   id: string;
@@ -228,7 +228,7 @@ export interface Vehicle {
 }
 export interface VehiclesResult {
   ok: true;
-  /** 今おもちのお車（ホーム画面に出す） */
+  /** 所有している車両（ホーム画面に出す） */
   selected: Vehicle[];
   /** 過去に記録のあるお車（履歴から選ぶときに出す） */
   history: Vehicle[];

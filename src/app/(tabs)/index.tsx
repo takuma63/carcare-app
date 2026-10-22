@@ -185,7 +185,7 @@ export default function HomeScreen() {
           </View>
           {vehicles.length === 0 ? (
             <Text style={styles.carsEmpty}>
-              おもちの車両をご登録ください。ご予約のときに選べるようになります。
+              お持ちの車両をご登録ください。ご予約の際に選べるようになります。
             </Text>
           ) : (
             vehicles.map((v) => {
