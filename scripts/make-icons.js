@@ -194,3 +194,5 @@ make(D + "favicon.png", { canvas: 196, markRatio: 0.66, bg: WHITE });
 make(D + "android-icon-foreground.png", { markRatio: 0.42 });
 make(D + "android-icon-background.png", { markRatio: 0, bg: WHITE });
 make(D + "android-icon-monochrome.png", { markRatio: 0.42, ink: [0, 0, 0] });
+// 登録完了のときに回すマーク単体（透過）。src/assets から require して使う
+make("/Users/takuma/projects/carcare-app/app/src/assets/mark.png", { canvas: 512, markRatio: 1 });
