@@ -1,7 +1,7 @@
 /* ============================================================
-   announcements.tsx  ―  お知らせ
+   announcements.tsx  ―  お知らせ（タブ）
    ------------------------------------------------------------
-   ホーム画面のお知らせ欄から開く。
+   タブの1つ。未読があるとタブにバッジが出る。
 
    ★ この機能の位置づけ
      一度ご来店いただいた方を1回で終わらせず、次につなげるためのもの。
@@ -17,18 +17,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Card } from "@/components/Card";
 import { ApiError, fetchMyAnnouncements, markAnnouncementRead, type Announcement } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
-const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
-
 export default function AnnouncementsScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
   const [items, setItems] = useState<Announcement[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -77,11 +73,7 @@ export default function AnnouncementsScreen() {
   return (
     <View style={styles.flex}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>お知らせ</Text>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -130,15 +122,11 @@ export default function AnnouncementsScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    gap: spacing.md,
     backgroundColor: colors.bg,
   },
   headerTitle: { fontFamily: fonts.serifJp, fontSize: fontSize.h3, color: colors.text },
-  headerSpacer: { flex: 1 },
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   center: { paddingVertical: spacing.xxl, alignItems: "center", gap: spacing.sm },
   emptyTitle: { fontFamily: fonts.serifJp, fontSize: fontSize.h3, color: colors.text, marginTop: spacing.xs },

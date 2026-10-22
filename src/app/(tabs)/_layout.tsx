@@ -1,13 +1,21 @@
 /* ============================================================
    (tabs)/_layout.tsx  ―  タブ構成（SPEC.md §4.1）
-   タブは4つ：ホーム / 利用履歴 / クーポン / 設定
+   タブは4つ：ホーム / お知らせ / クーポン / 設定
+
+   ★ 利用履歴ではなくお知らせをタブに置いている（2026-10-22）
+     利用履歴は「見たいときに見に行くもの」で、常駐させる必要がない。
+     お知らせは「気づいてもらう」のが仕事なので、タブに置いて
+     未読バッジを出す。リピーター施策の効き方が変わるため。
+     利用履歴はホーム画面に1行の導線を置いてある。
    デザイン提案05適用：上ボーダーを消して上向きの淡い影で浮かせ、
    アクティブタブに金の小さなドットを添える。
 ============================================================ */
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { fetchMyAnnouncements } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts } from "@/theme";
 
@@ -29,6 +37,20 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const [unread, setUnread] = useState(0);
+
+  /* 未読の件数。タブを切り替えるたびに取り直す（配信は不定期なため）。
+     取れなくてもタブは出す（バッジが出ないだけ）。 */
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      fetchMyAnnouncements()
+        .then((r) => { if (alive) setUnread(r.unread); })
+        .catch(() => {});
+      return () => { alive = false; };
+    }, [])
+  );
+
   return (
     <Tabs
       screenOptions={{
@@ -55,10 +77,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="announcements"
         options={{
-          title: "利用履歴",
-          tabBarIcon: ({ color, focused }) => <TabIcon name="calendar" color={color} focused={focused} />,
+          title: "お知らせ",
+          tabBarIcon: ({ color, focused }) => <TabIcon name="bell" color={color} focused={focused} />,
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.gold, fontSize: 10 },
         }}
       />
       <Tabs.Screen

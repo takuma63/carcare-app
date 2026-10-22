@@ -11,7 +11,7 @@ export default function BookingsLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: "予約履歴" }} />
+      <Stack.Screen name="index" options={{ title: "ご利用履歴" }} />
       <Stack.Screen name="[id]" options={{ title: "予約詳細" }} />
     </Stack>
   );

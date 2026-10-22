@@ -26,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps, fetchMyVehicles, fetchMyAnnouncements, type Vehicle } from "@/lib/api";
+import { fetchMyBookings, fetchMyCoupons, fetchMyPrepaid, fetchMyStamps, fetchMyVehicles, type Vehicle } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
@@ -75,7 +75,6 @@ export default function HomeScreen() {
   // 回数券の残高（0円・未購入のときは出さない）
   const [prepaid, setPrepaid] = useState(0);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [unread, setUnread] = useState(0);
 
   const loadActiveBooking = async () => {
     try {
@@ -117,12 +116,6 @@ export default function HomeScreen() {
     try {
       const v = await fetchMyVehicles();
       setVehicles(v.selected);
-    } catch {
-      // 静かに無視する
-    }
-    try {
-      const an = await fetchMyAnnouncements();
-      setUnread(an.unread);
     } catch {
       // 静かに無視する
     }
@@ -308,18 +301,17 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 05 お知らせ。リピーター施策の中心なので、未読があるときは目立たせる
-            （announcements.tsx 冒頭を参照） */}
+        {/* 05 ご利用履歴への導線。
+            お知らせをタブに移したぶん、利用履歴はここから1タップで開く。
+            「ホームのどこかにある」ではなく、行として置くのが大事（2026-10-22）。 */}
         <TouchableOpacity
           style={styles.news}
-          onPress={() => router.push("/announcements")}
+          onPress={() => router.push("/bookings")}
           activeOpacity={0.85}
-          accessibilityLabel="お知らせを開く"
+          accessibilityLabel="ご利用履歴を開く"
         >
-          <Feather name="bell" size={18} color={unread > 0 ? colors.goldDeep : colors.textLight} />
-          <Text style={[styles.newsText, unread > 0 && styles.newsTextOn]}>
-            {unread > 0 ? `未読のお知らせが${unread}件あります` : "お知らせ"}
-          </Text>
+          <Feather name="calendar" size={18} color={colors.textLight} />
+          <Text style={styles.newsText}>ご利用履歴</Text>
           <Feather name="chevron-right" size={18} color={colors.textLight} />
         </TouchableOpacity>
 
@@ -425,36 +417,45 @@ const styles = StyleSheet.create({
   carName: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
   carPlate: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
 
-  /* 作業の進み具合 */
-  steps: { flexDirection: "row", marginTop: spacing.md },
+  /* 作業の進み具合。
+     ★ チケットは白背景なので、文字は濃い色にする。
+       （一度 白文字で作って実機プレビューで見えなくなった） */
+  steps: {
+    flexDirection: "row",
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   step: { flex: 1, alignItems: "center" },
+  /* 点と点をつなぐ線。1つ前の点から伸ばす */
   stepLine: {
     position: "absolute",
     top: 5,
     right: "50%",
     left: "-50%",
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    height: 2,
+    backgroundColor: colors.border,
   },
-  stepLineOn: { backgroundColor: colors.goldLight },
+  stepLineOn: { backgroundColor: colors.gold },
   stepDot: {
-    width: 11,
-    height: 11,
+    width: 12,
+    height: 12,
     borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    backgroundColor: colors.border,
   },
-  stepDotOn: { backgroundColor: colors.goldLight },
+  stepDotOn: { backgroundColor: colors.gold },
   stepLabel: {
     fontFamily: fonts.sans,
     fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
-    marginTop: 5,
+    color: colors.textLight,
+    marginTop: 6,
   },
-  stepLabelOn: { color: colors.white },
+  stepLabelOn: { fontFamily: fonts.sansMedium, color: colors.text },
   ticketDone: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
-    color: colors.goldLight,
+    color: colors.goldDeep,
     marginTop: spacing.sm,
   },
 
