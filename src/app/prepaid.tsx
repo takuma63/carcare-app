@@ -12,6 +12,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { fetchMyPrepaid, ApiError } from "@/lib/api";
@@ -54,6 +55,7 @@ function HistoryRow({ entry }: { entry: PrepaidEntry }) {
 }
 
 export default function PrepaidScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
   const [history, setHistory] = useState<PrepaidEntry[]>([]);
@@ -84,7 +86,7 @@ export default function PrepaidScreen() {
 
   return (
     <View style={styles.flex}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -132,8 +134,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+/* ★ 画面の上端は iPhone のステータスバー（時刻・電波・電池）の下に
+   潜り込むため、安全領域のぶんだけ余白を足す。端末ごとに高さが違うので
+   固定値では合わない（ノッチ有無・Dynamic Island で変わる）。 */
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xxl,
     paddingBottom: spacing.sm,
     gap: spacing.md,
   },

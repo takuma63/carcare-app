@@ -28,6 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { GoldButton } from "@/components/GoldButton";
 import { useAuth } from "@/lib/auth-context";
@@ -50,6 +51,7 @@ interface Candidate {
 }
 
 export default function RegisterScreen() {
+  const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const router = useRouter();
 
@@ -159,7 +161,10 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
         {step === "form" && (
@@ -365,10 +370,11 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+/* ★ 上端の余白は固定値ではなく安全領域から決める。
+   ステータスバーの高さは端末によって違う（ノッチ有無・Dynamic Island）。 */
   content: {
     flexGrow: 1,
     padding: spacing.xl,
-    paddingTop: spacing.xxl,
   },
   logo: {
     width: 140,

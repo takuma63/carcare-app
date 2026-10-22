@@ -20,6 +20,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { Card } from "@/components/Card";
@@ -40,6 +41,7 @@ export default function BookingsScreen() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -80,7 +82,7 @@ export default function BookingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.muted}>読み込み中…</Text>
       </View>
     );
@@ -88,7 +90,7 @@ export default function BookingsScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -96,7 +98,7 @@ export default function BookingsScreen() {
 
   if (!entries.length) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Feather name="calendar" size={40} color={colors.gold} />
         <Text style={styles.emptyTitle}>まだご利用の記録はありません</Text>
         <Text style={styles.emptyText}>手洗い洗車・コーティングのご予約は{"\n"}こちらからどうぞ。</Text>
@@ -109,7 +111,7 @@ export default function BookingsScreen() {
     <FlatList
       data={entries}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingTop: insets.top + spacing.lg }]}
       refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={colors.gold} />}
       renderItem={({ item }) =>
         item.kind === "booking" ? (
@@ -225,6 +227,9 @@ const styles = StyleSheet.create({
     color: colors.danger,
     textAlign: "center",
   },
+/* ★ 画面の上端は iPhone のステータスバー（時刻・電波・電池）の下に
+   潜り込むため、安全領域のぶんだけ余白を足す。端末ごとに高さが違うので
+   固定値では合わない（ノッチ有無・Dynamic Island で変わる）。 */
   list: {
     padding: spacing.lg,
     gap: spacing.md,

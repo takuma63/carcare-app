@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +18,7 @@ import { colors, fonts, fontSize, spacing } from "@/theme";
 const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { customer, signOut } = useAuth();
   const [deleting, setDeleting] = useState(false);
 
@@ -70,7 +72,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
       <Text style={styles.sectionTitle}>プロフィール</Text>
       <Card style={styles.card}>
         <Row label="お名前" value={customer?.name ?? "—"} />
@@ -112,6 +114,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+/* ★ 画面の上端は iPhone のステータスバー（時刻・電波・電池）の下に
+   潜り込むため、安全領域のぶんだけ余白を足す。端末ごとに高さが違うので
+   固定値では合わない（ノッチ有無・Dynamic Island で変わる）。 */
   content: {
     padding: spacing.lg,
   },

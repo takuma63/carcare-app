@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,6 +16,7 @@ import { colors, fonts, fontSize, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
 
 export default function BookingDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function BookingDetailScreen() {
   const shortToken = booking.public_token.slice(0, 8).toUpperCase();
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
       <View style={styles.headerRow}>
         <Text style={styles.tokenLabel}>予約番号 {shortToken}</Text>
         <StatusBadge status={booking.status} />
@@ -127,6 +129,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+/* ★ 画面の上端は iPhone のステータスバー（時刻・電波・電池）の下に
+   潜り込むため、安全領域のぶんだけ余白を足す。端末ごとに高さが違うので
+   固定値では合わない（ノッチ有無・Dynamic Island で変わる）。 */
   content: {
     padding: spacing.lg,
     gap: spacing.md,

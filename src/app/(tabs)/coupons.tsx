@@ -12,6 +12,7 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { fetchMyCoupons, fetchMyStamps } from "@/lib/api";
@@ -159,6 +160,7 @@ export default function CouponsScreen() {
   const [stamp, setStamp] = useState<StampCard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const load = useCallback(async () => {
     try {
@@ -205,7 +207,7 @@ export default function CouponsScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
     >
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -247,6 +249,9 @@ const STRIPE_W = 6;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgSub },
+/* ★ 画面の上端は iPhone のステータスバー（時刻・電波・電池）の下に
+   潜り込むため、安全領域のぶんだけ余白を足す。端末ごとに高さが違うので
+   固定値では合わない（ノッチ有無・Dynamic Island で変わる）。 */
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bgSub },
 

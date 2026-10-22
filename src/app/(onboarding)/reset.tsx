@@ -20,17 +20,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { GoldButton } from "@/components/GoldButton";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError, loginWithEntra } from "@/lib/api";
 import * as entra from "@/lib/entra";
 import { registerForPushNotifications } from "@/lib/push";
+import { spacing } from "@/theme";
 import { Field, styles } from "./register";
 
 type Step = "email" | "code";
 
 export default function ResetScreen() {
+  const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const router = useRouter();
 
@@ -88,7 +91,10 @@ export default function ResetScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
         {step === "email" && (
