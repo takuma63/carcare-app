@@ -387,6 +387,33 @@ export function fetchSlots(shop: string, date: string) {
   return request<SlotsResult>("slots", { body: { shop, date }, auth: false });
 }
 
+/* ---------- 指名スタッフの出勤表 ----------
+   ご指名の場合、そのスタッフが出ている日だけをお選びいただくために使う。
+   返ってくる shifts に入っているのは「お休みの日」だけで、
+   入っていない日は出勤（サーバー側 _staff-shifts.js と同じ決まり）。
+   GET＋クエリなので request() は通さず、ここで組み立てる。 */
+export interface StaffShiftsResult {
+  ok: true;
+  staff?: NominationStaff[];
+  fee?: number;
+  slot_time?: string;
+  shifts?: Record<string, Record<string, boolean>>;
+}
+export async function fetchStaffShifts(from: string, days: number): Promise<StaffShiftsResult> {
+  const url = `${API_BASE}/nomination-staff?from=${encodeURIComponent(from)}&days=${days}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "GET" });
+  } catch {
+    throw new ApiError("通信エラーが発生しました。ネットワークをご確認ください。");
+  }
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok || data.ok === false) {
+    throw new ApiError(typeof data.error === "string" ? data.error : "出勤状況を取得できませんでした");
+  }
+  return data as unknown as StaffShiftsResult;
+}
+
 /* ---------- payment-intent（事前決済の決済枠を作成。金額はサーバー側で再計算） ---------- */
 export interface PaymentIntentResult {
   ok: true;

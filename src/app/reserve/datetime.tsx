@@ -1,10 +1,17 @@
 /* ============================================================
    reserve/datetime.tsx  ―  S5 店舗・日時選択（3/4。SPEC.md §4.2）
    ------------------------------------------------------------
-   店舗5つから選択（必須）→ 日付（今日から14日）→ 既存slots.js APIで
-   空き時間を取得し、埋まっている枠（30分刻み・10:00〜18:00。
-   reserve-form.jsと同一）を非活性にする。
+   店舗5つから選択（必須）→ ご指名の有無 → 日付（今日から14日）→
+   既存slots.js APIで空き時間を取得し、埋まっている枠（30分刻み・
+   10:00〜18:00。reserve-form.jsと同一）を非活性にする。
    「日時は店頭で調整する」チェックでスキップ可（preferred_at = null）。
+
+   ★ ご指名について（2026-10-22 発注者の要望。Web予約と同じ流れに揃えた）
+     以前は「18:00の枠を選んで初めて指名欄が出る」形だったため、
+     指名制度があることに気づかれなかった。店舗を選んだ直後に
+     「指名しない／スタッフを指名する」を選んでいただく形にして、
+     指名する場合はそのスタッフの出勤日だけを日付に出す。
+     （出勤表＝/api/nomination-staff?from=&days=。入っているのは休みの日だけ）
 ============================================================ */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -15,7 +22,7 @@ import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
-import { fetchSlots } from "@/lib/api";
+import { fetchSlots, fetchStaffShifts } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
 import { ShopMap } from "@/components/ShopMap";
 import { SHOP_NAMES, findShop } from "@/lib/shops";
@@ -53,19 +60,69 @@ export default function DateTimeScreen() {
   const [booked, setBooked] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // 通常枠は全店 10:00〜18:00。18:00 枠では任意でスタッフ指名を付けられる
+  // 通常枠は全店 10:00〜18:00。ご指名は 18:00 の枠のみ
   // （nom.shop が null なら全店舗、店舗名なら当該店のみ）
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
   const isNomShop = !!(nom && !!shop && (nom.shop == null || shop === nom.shop));
   const staffList = nom?.staff ?? [];
   const timeOptions = useMemo(() => buildTimeOptions(18 * 60), []);
-  // 指名UIを出せる状態か（対象店＋18:00枠を選択中）
-  const nominateEligible = !!(nom && isNomShop && preferredTime === nom.slotTime);
 
-  // 18:00以外に移ったら指名を解除する（料金が残らないように）
+  /* ご指名の有無。null＝まだ選んでいない（店舗を選んだ直後の状態）。
+     戻ってきたときに選び直さなくて済むよう、スタッフが残っていれば「する」から始める。 */
+  const [nomMode, setNomMode] = useState<"yes" | "no" | null>(nominatedStaffId ? "yes" : null);
+  const [offDays, setOffDays] = useState<Record<string, boolean>>({});   // 選択中スタッフの休み
+  const [loadingShifts, setLoadingShifts] = useState(false);
+
+  // 指名を受け付けない店舗では、この選択自体を出さずに従来どおり進む
   useEffect(() => {
-    if (!nominateEligible && nominatedStaffId) setNominatedStaffId(null);
-  }, [nominateEligible, nominatedStaffId, setNominatedStaffId]);
+    if (!isNomShop && nomMode !== "no") {
+      setNomMode(shop ? "no" : null);
+      if (nominatedStaffId) setNominatedStaffId(null);
+    }
+  }, [isNomShop, shop]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* 選択中スタッフの出勤表を取る。入っているのは休みの日だけ。
+     取れなかったときは休み無しとして扱い、ご指名が止まらないようにする
+     （サーバー側 _staff-shifts.js と同じ考え方。最終的な可否は予約時に検証される）。 */
+  useEffect(() => {
+    if (nomMode !== "yes" || !nominatedStaffId) { setOffDays({}); return; }
+    let cancelled = false;
+    setLoadingShifts(true);
+    const today = new Date();
+    fetchStaffShifts(toDateKey(today), DAYS_AHEAD)
+      .then((res) => { if (!cancelled) setOffDays(res.shifts?.[nominatedStaffId] ?? {}); })
+      .catch(() => { if (!cancelled) setOffDays({}); })
+      .finally(() => { if (!cancelled) setLoadingShifts(false); });
+    return () => { cancelled = true; };
+  }, [nomMode, nominatedStaffId]);
+
+  const isOffDay = (key: string) => offDays[key] === false;
+
+  /* ご指名のときは 18:00 に固定する（ご指名はその枠だけのため）。
+     ただしその日の 18:00 が既に埋まっていれば選べないので外す。 */
+  useEffect(() => {
+    if (nomMode !== "yes" || !nom || !nominatedStaffId || !preferredDate || loadingSlots) return;
+    const want = booked.includes(nom.slotTime) ? null : nom.slotTime;
+    if (preferredTime !== want) setPreferredTime(want);
+  }, [nomMode, nominatedStaffId, preferredDate, booked, loadingSlots, preferredTime, nom, setPreferredTime]);
+
+  /* ご指名をやめたら、固定していた時間も外す */
+  const chooseNomMode = (mode: "yes" | "no") => {
+    setNomMode(mode);
+    if (mode === "no") {
+      setNominatedStaffId(null);
+      setPreferredTime(null);
+      setOffDays({});
+    } else {
+      setSkipDateTime(false);   // ご指名は日時が決まらないと成立しない
+      setPreferredTime(null);
+    }
+  };
+
+  /* 選んだスタッフが休みの日を選んでいたら、日付を外す（表示と選択を食い違わせない） */
+  useEffect(() => {
+    if (nomMode === "yes" && preferredDate && isOffDay(preferredDate)) setPreferredDate(null);
+  }, [nomMode, preferredDate, offDays]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const dateOptions = useMemo(() => {
     const today = new Date();
@@ -136,39 +193,112 @@ export default function DateTimeScreen() {
         {/* 選んだ店舗の場所（2026-10-02 社長要望でGoogleマップを埋め込み） */}
         <ShopMap shopName={shop} />
 
-        <TouchableOpacity style={styles.skipRow} onPress={handleToggleSkip}>
-          <View style={[styles.checkbox, skipDateTime && styles.checkboxOn]}>
-            {skipDateTime && <Feather name="check" size={14} color={colors.white} />}
-          </View>
-          <Text style={styles.skipText}>日時は店頭で調整する</Text>
-        </TouchableOpacity>
+        {/* ご指名の有無。店舗の次に決めていただく（Web予約と同じ流れ） */}
+        {!!shop && isNomShop && nom && (
+          <>
+            <Text style={styles.sectionLabel}>スタッフのご指名</Text>
+            <View style={styles.nomChoice}>
+              <TouchableOpacity
+                style={[styles.nomCard, nomMode === "no" && styles.nomCardOn]}
+                onPress={() => chooseNomMode("no")}
+              >
+                <Text style={[styles.nomCardTitle, nomMode === "no" && styles.nomCardTitleOn]}>指名しない</Text>
+                <Text style={styles.nomCardDesc}>空いているお時間からお選びいただけます。</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.nomCard, nomMode === "yes" && styles.nomCardOn]}
+                onPress={() => chooseNomMode("yes")}
+              >
+                <Text style={[styles.nomCardTitle, nomMode === "yes" && styles.nomCardTitleOn]}>スタッフを指名する</Text>
+                <Text style={styles.nomCardDesc}>指名料 ＋{yen(nom.fee)}／{nom.slotTime}〜の枠</Text>
+              </TouchableOpacity>
+            </View>
+
+            {nomMode === "yes" && (
+              <>
+                <Text style={styles.nomPick}>ご指名のスタッフをお選びください。</Text>
+                <View style={styles.staffGrid}>
+                  {staffList.map((st) => {
+                    const active = nominatedStaffId === st.id;
+                    return (
+                      <TouchableOpacity
+                        key={st.id}
+                        style={[styles.staffCard, active && styles.staffCardOn]}
+                        onPress={() => setNominatedStaffId(st.id)}
+                      >
+                        <Image source={staffPhoto(st.id)} style={styles.staffPhoto} />
+                        <Text style={styles.staffName} numberOfLines={1}>{st.name}</Text>
+                        {!!st.role && <Text style={styles.staffRole} numberOfLines={1}>{st.role}</Text>}
+                        {active && (
+                          <View style={styles.staffCheck}>
+                            <Feather name="check" size={12} color={colors.white} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </>
+        )}
+
+        {/* 日時は、ご指名の有無が決まってから出す
+            （ご指名の場合はスタッフが決まるまで出勤日が分からないため） */}
+        {(nomMode === "no" || (nomMode === "yes" && !!nominatedStaffId)) && (
+        <>
+        {nomMode === "no" && (
+          <TouchableOpacity style={styles.skipRow} onPress={handleToggleSkip}>
+            <View style={[styles.checkbox, skipDateTime && styles.checkboxOn]}>
+              {skipDateTime && <Feather name="check" size={14} color={colors.white} />}
+            </View>
+            <Text style={styles.skipText}>日時は店頭で調整する</Text>
+          </TouchableOpacity>
+        )}
 
         {!skipDateTime && (
           <>
-            <Text style={styles.sectionLabel}>ご希望日</Text>
+            <Text style={styles.sectionLabel}>
+              ご希望日
+              {nomMode === "yes" ? "（ご指名スタッフの出勤日）" : ""}
+              {loadingShifts ? "　確認中…" : ""}
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
               {dateOptions.map((d, idx) => {
                 const key = toDateKey(d);
                 const active = preferredDate === key;
+                // ご指名中、そのスタッフがお休みの日は選べない
+                const off = nomMode === "yes" && isOffDay(key);
                 // 月跨ぎで迷わないよう「今日」「明日」、月初と先頭チップには「◯月」を添える
-                const topLabel =
-                  idx === 0 ? "今日" : idx === 1 ? "明日" : d.getDate() === 1 || idx === 2 ? `${d.getMonth() + 1}月` : "";
+                const topLabel = off
+                  ? "休"
+                  : idx === 0 ? "今日" : idx === 1 ? "明日" : d.getDate() === 1 || idx === 2 ? `${d.getMonth() + 1}月` : "";
                 return (
                   <TouchableOpacity
                     key={key}
-                    style={[styles.dateChip, active && styles.dateChipOn]}
+                    disabled={off}
+                    style={[styles.dateChip, active && styles.dateChipOn, off && styles.dateChipOff]}
                     onPress={() => {
                       setPreferredDate(key);
                       setPreferredTime(null);
                     }}
                   >
-                    <Text style={[styles.dateChipTop, active && styles.dateChipTextOn]}>{topLabel || " "}</Text>
-                    <Text style={[styles.dateChipDay, active && styles.dateChipTextOn]}>{d.getDate()}</Text>
+                    <Text
+                      style={[styles.dateChipTop, active && styles.dateChipTextOn, off && styles.dateChipTextOff]}
+                    >
+                      {topLabel || " "}
+                    </Text>
+                    <Text
+                      style={[styles.dateChipDay, active && styles.dateChipTextOn, off && styles.dateChipTextOff]}
+                    >
+                      {d.getDate()}
+                    </Text>
                     <Text
                       style={[
                         styles.dateChipWd,
                         d.getDay() === 0 && styles.dateChipSun,
                         active && styles.dateChipTextOn,
+                        off && styles.dateChipTextOff,
                       ]}
                     >
                       {WEEKDAY[d.getDay()]}
@@ -178,7 +308,23 @@ export default function DateTimeScreen() {
               })}
             </ScrollView>
 
-            {preferredDate && (
+            {preferredDate && nomMode === "yes" && nom && (
+              <>
+                <Text style={styles.sectionLabel}>ご希望時間{loadingSlots ? "　確認中…" : ""}</Text>
+                {booked.includes(nom.slotTime) ? (
+                  <Text style={styles.nomFull}>
+                    この日の {nom.slotTime} は、ほかのご予約が入っております。別の日をお選びください。
+                  </Text>
+                ) : (
+                  <View style={styles.nomFixed}>
+                    <Feather name="clock" size={16} color={colors.gold} />
+                    <Text style={styles.nomFixedText}>{nom.slotTime} 〜（ご指名の枠）</Text>
+                  </View>
+                )}
+              </>
+            )}
+
+            {preferredDate && nomMode !== "yes" && (
               <>
                 <Text style={styles.sectionLabel}>
                   ご希望時間（10:00〜18:00）{loadingSlots ? "　確認中…" : ""}
@@ -208,46 +354,11 @@ export default function DateTimeScreen() {
                   })}
                 </View>
 
-                {/* 指名オプション（六本木ヒルズ店・18:00枠を選択中のみ）。
-                    スタッフを1名選ぶと確認画面で指名料が加算される（任意） */}
-                {nominateEligible && nom && (
-                  <View style={styles.nomBox}>
-                    <View style={styles.nomHeadRow}>
-                      <Feather name="award" size={18} color={colors.gold} />
-                      <Text style={styles.nomHead}>スタッフを指名する（任意・＋{yen(nom.fee)}）</Text>
-                    </View>
-                    <Text style={styles.nomHint}>担当スタッフを1名お選びください。作業は指名スタッフが担当します。</Text>
-                    <View style={styles.staffGrid}>
-                      {staffList.map((s) => {
-                        const active = nominatedStaffId === s.id;
-                        return (
-                          <TouchableOpacity
-                            key={s.id}
-                            style={[styles.staffCard, active && styles.staffCardOn]}
-                            onPress={() => setNominatedStaffId(active ? null : s.id)}
-                          >
-                            <Image source={staffPhoto(s.id)} style={styles.staffPhoto} />
-                            <Text style={styles.staffName} numberOfLines={1}>{s.name}</Text>
-                            {!!s.role && <Text style={styles.staffRole} numberOfLines={1}>{s.role}</Text>}
-                            {active && (
-                              <View style={styles.staffCheck}>
-                                <Feather name="check" size={12} color={colors.white} />
-                              </View>
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                    {nominatedStaffId && (
-                      <TouchableOpacity onPress={() => setNominatedStaffId(null)}>
-                        <Text style={styles.nomClear}>指名を解除する</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
               </>
             )}
           </>
+        )}
+        </>
         )}
       </ScrollView>
 
@@ -365,6 +476,14 @@ const styles = StyleSheet.create({
   dateChipSun: {
     color: colors.danger,
   },
+  /* ご指名のスタッフがお休みの日 */
+  dateChipOff: {
+    backgroundColor: colors.bgSub,
+    borderColor: colors.bgSub,
+  },
+  dateChipTextOff: {
+    color: colors.textLight,
+  },
   dateChipTextOn: {
     color: colors.white,
   },
@@ -401,33 +520,64 @@ const styles = StyleSheet.create({
   timeChipTextDisabled: {
     color: colors.textLight,
   },
-  nomBox: {
-    marginTop: spacing.sm,
+  /* ご指名の「する／しない」。同じ重さの2択なので同じ見た目の札を縦に並べる */
+  nomChoice: {
+    gap: spacing.sm,
+  },
+  nomCard: {
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderTopWidth: 2,
-    borderTopColor: colors.gold,
     borderRadius: radius,
     backgroundColor: colors.white,
-    gap: spacing.sm,
+    gap: 4,
   },
-  nomHeadRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
+  nomCardOn: {
+    borderColor: colors.gold,
+    borderWidth: 2,
+    padding: spacing.md - 1,
   },
-  nomHead: {
+  nomCardTitle: {
     fontFamily: fonts.sansMedium,
     fontSize: fontSize.body,
     color: colors.text,
-    flexShrink: 1,
   },
-  nomHint: {
+  nomCardTitleOn: {
+    color: colors.goldDeep,
+  },
+  nomCardDesc: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
     lineHeight: 18,
+  },
+  nomPick: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.textLight,
+    marginTop: 4,
+  },
+  /* ご指名のときの時間表示（18:00で固定なので、選ばせずに知らせる） */
+  nomFixed: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius,
+    backgroundColor: colors.white,
+  },
+  nomFixedText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.body,
+    color: colors.text,
+  },
+  nomFull: {
+    fontFamily: fonts.sans,
+    fontSize: fontSize.caption,
+    color: colors.danger,
+    lineHeight: 20,
   },
   staffGrid: {
     flexDirection: "row",
@@ -451,8 +601,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fdf8ee",
   },
   staffPhoto: {
-    width: "100%",
-    aspectRatio: 1,
+    // aspectRatio だと環境によって縦に伸びてしまうため、正方形を実寸で指定する
+    width: 88,
+    height: 88,
     borderRadius: radius,
     backgroundColor: colors.bgSub,
     marginBottom: 6,
@@ -477,13 +628,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
     alignItems: "center",
     justifyContent: "center",
-  },
-  nomClear: {
-    fontFamily: fonts.sans,
-    fontSize: fontSize.caption,
-    color: colors.goldDeep,
-    textDecorationLine: "underline",
-    marginTop: 2,
   },
   bottomBar: {
     padding: spacing.md,
