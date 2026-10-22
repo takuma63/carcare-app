@@ -52,6 +52,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -111,6 +112,17 @@ export default function RegisterScreen() {
   const progress = useRef(new Animated.Value(1 / FLOW.length)).current;
   const fade = useRef(new Animated.Value(1)).current;
   const shift = useRef(new Animated.Value(0)).current;
+
+  /* ★ 一度ログインしたことのある端末なら、ログイン画面へ回す。
+     セッションが切れたとき（サーバーが401を返したとき）ここへ戻ってくるが、
+     そのまま新規登録を始められるとアカウントを二重に作ってしまう。 */
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem("ccc_has_account")
+      .then((seen) => { if (alive && seen) router.replace("/(onboarding)/login"); })
+      .catch(() => { /* 読めないときは新規登録のまま */ });
+    return () => { alive = false; };
+  }, [router]);
 
   useEffect(() => {
     let alive = true;

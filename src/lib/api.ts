@@ -23,7 +23,14 @@ const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?
 const ASK_URL = (Constants.expoConfig?.extra?.ASK_URL as string | undefined) ?? "";
 const TOKEN_KEY = "ccc_auth_token";
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  /** サーバーが返したHTTPステータス。401（ログインが切れた）の判定に使う */
+  readonly status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
 
 /* 保存先：実機は SecureStore（暗号化）。
    Web（PCでの動作確認用）は SecureStore が使えないため AsyncStorage を使う。
@@ -92,9 +99,35 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok || data.ok === false) {
     const message = typeof data.error === "string" ? data.error : "エラーが発生しました。時間をおいて再度お試しください。";
-    throw new ApiError(message);
+    /* ★ 401＝サーバーがこのトークンを認めなかった、ということ。
+       期限切れ・端末を手放したあとの失効・退会など理由はいろいろあるが、
+       いずれにせよ端末に残っているログイン状態は、もう正しくない。
+       画面ごとに「ログインが必要です」と赤字で出しても、ホームには
+       お名前が出たままで、お客様にはどうしようもない。
+       ここで一度だけ知らせて、ログイン画面へお戻しする。 */
+    if (res.status === 401 && auth) notifyUnauthorized();
+    throw new ApiError(message, res.status);
   }
   return data as T;
+}
+
+/* 401 を受け取ったときに呼ぶ処理。auth-context が起動時に登録する。
+   （api.ts から直接サインアウトすると、import が循環してしまう） */
+type UnauthorizedHandler = () => void;
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+let notifiedAt = 0;
+
+export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) {
+  unauthorizedHandler = fn;
+}
+
+/* 画面がいくつも同時に読み込むため、401 も同時に何本も返ってくる。
+   短い間に何度も呼ばれても1回だけ処理する。 */
+function notifyUnauthorized() {
+  const now = Date.now();
+  if (now - notifiedAt < 3000) return;
+  notifiedAt = now;
+  unauthorizedHandler?.();
 }
 
 /* ---------- app-login（Entraで本人確認を終えた方の入口） ----------

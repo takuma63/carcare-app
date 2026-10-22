@@ -1,7 +1,10 @@
 /* ============================================================
-   vehicles.tsx  ―  おもちのお車の登録
+   vehicles.tsx  ―  車両の登録
    ------------------------------------------------------------
-   ホーム画面の「お車」欄から開く。
+   ホーム画面の「車両登録／登録済みの車両」欄から開く。
+
+   ★ 画面の言葉は「車両」で統一する（2026-10-22 発注者の指示）。
+     「お車の登録」「今おもちのお車」は日本語として据わりが悪かった。
 
    ★ 履歴から選ぶ形にしている理由
      店舗の記録には、そのお客様が過去に持ち込まれた車が全部入っている。
@@ -54,10 +57,24 @@ export default function VehiclesScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 新しく追加するとき
+  /* 追加するときの入力。
+     ★ ナンバーは入れていただかなくても追加できる。
+       ただし画面に「任意」とは書かない（書くと誰も入れなくなるため。
+       2026-10-22 発注者の指示）。ナンバーは陸運局の表記どおり
+       4つに分かれているので、入力欄も4つに分ける。 */
   const [adding, setAdding] = useState(false);
   const [maker, setMaker] = useState("");
   const [model, setModel] = useState("");
+  const [color, setColor] = useState("");
+  const [plateArea, setPlateArea] = useState("");
+  const [plateClass, setPlateClass] = useState("");
+  const [plateHiragana, setPlateHiragana] = useState("");
+  const [plateNumber, setPlateNumber] = useState("");
+
+  const clearForm = () => {
+    setMaker(""); setModel(""); setColor("");
+    setPlateArea(""); setPlateClass(""); setPlateHiragana(""); setPlateNumber("");
+  };
 
   const apply = (res: { selected: Vehicle[]; history: Vehicle[] }) => {
     setSelected(res.selected);
@@ -69,7 +86,7 @@ export default function VehiclesScreen() {
     try {
       apply(await fetchMyVehicles());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "お車の情報を取得できませんでした。");
+      setError(e instanceof ApiError ? e.message : "車両の情報を取得できませんでした。");
     } finally {
       setLoading(false);
     }
@@ -93,7 +110,7 @@ export default function VehiclesScreen() {
 
   const onRemove = (v: Vehicle) => {
     Alert.alert(
-      "このお車を外しますか",
+      "この車両を外しますか",
       `${v.title}\n\nご来店の記録は残ります。もう一度「履歴から選ぶ」で戻せます。`,
       [
         { text: "やめる", style: "cancel" },
@@ -107,9 +124,18 @@ export default function VehiclesScreen() {
       setError("メーカーまたは車種をご入力ください。");
       return;
     }
-    await run(() => addVehicle({ maker: maker.trim(), model: model.trim() }));
-    setMaker("");
-    setModel("");
+    await run(() =>
+      addVehicle({
+        maker: maker.trim(),
+        model: model.trim(),
+        color: color.trim(),
+        plate_area: plateArea.trim(),
+        plate_class: plateClass.trim(),
+        plate_hiragana: plateHiragana.trim(),
+        plate_number: plateNumber.trim(),
+      })
+    );
+    clearForm();
     setAdding(false);
   };
 
@@ -119,7 +145,7 @@ export default function VehiclesScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>お車の登録</Text>
+        <Text style={styles.headerTitle}>車両の登録</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -132,8 +158,8 @@ export default function VehiclesScreen() {
           </View>
         ) : (
           <>
-            {/* ---------- 今おもちのお車 ---------- */}
-            <Text style={styles.sectionTitle}>今おもちのお車</Text>
+            {/* ---------- 所有している車両 ---------- */}
+            <Text style={styles.sectionTitle}>所有している車両</Text>
             {selected.length === 0 ? (
               <Text style={styles.empty}>
                 まだご登録がありません。{"\n"}下から選ぶか、新しく追加してください。
@@ -174,15 +200,62 @@ export default function VehiclesScreen() {
                   placeholder="例：ハリアー"
                   placeholderTextColor={colors.textLight}
                 />
+                <Text style={styles.fieldLabel}>ボディカラー</Text>
+                <TextInput
+                  style={styles.input}
+                  value={color}
+                  onChangeText={setColor}
+                  placeholder="例：パールホワイト"
+                  placeholderTextColor={colors.textLight}
+                />
+
+                {/* ナンバー。ナンバープレートと同じ並びにして、
+                    どこに何を入れるか見ただけで分かるようにする。 */}
+                <Text style={styles.fieldLabel}>ナンバー</Text>
+                <View style={styles.plateRow}>
+                  <TextInput
+                    style={[styles.input, styles.plateInput, styles.plateArea]}
+                    value={plateArea}
+                    onChangeText={setPlateArea}
+                    placeholder="品川"
+                    placeholderTextColor={colors.textLight}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.plateInput, styles.plateClass]}
+                    value={plateClass}
+                    onChangeText={setPlateClass}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    placeholder="300"
+                    placeholderTextColor={colors.textLight}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.plateInput, styles.plateKana]}
+                    value={plateHiragana}
+                    onChangeText={setPlateHiragana}
+                    maxLength={1}
+                    placeholder="さ"
+                    placeholderTextColor={colors.textLight}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.plateInput, styles.plateNumber]}
+                    value={plateNumber}
+                    onChangeText={setPlateNumber}
+                    maxLength={7}
+                    placeholder="12-34"
+                    placeholderTextColor={colors.textLight}
+                  />
+                </View>
+
                 <GoldButton title="追加する" onPress={onAdd} loading={busy} style={styles.addButton} />
-                <TouchableOpacity onPress={() => setAdding(false)} style={styles.linkRow}>
+                <TouchableOpacity onPress={() => { clearForm(); setAdding(false); }} style={styles.linkRow}>
                   <Text style={styles.link}>やめる</Text>
                 </TouchableOpacity>
               </Card>
             ) : (
               <TouchableOpacity style={styles.addRow} onPress={() => setAdding(true)} disabled={busy}>
                 <Feather name="plus" size={18} color={colors.goldDeep} />
-                <Text style={styles.addText}>新しいお車を追加する</Text>
+                <Text style={styles.addText}>車両を追加する</Text>
               </TouchableOpacity>
             )}
 
@@ -191,7 +264,7 @@ export default function VehiclesScreen() {
               <>
                 <Text style={[styles.sectionTitle, styles.sectionGap]}>ご来店の記録から選ぶ</Text>
                 <Text style={styles.sectionHint}>
-                  これまでにご来店いただいたお車です。今おもちのものをお選びください。
+                  これまでにご来店いただいた車両です。いま所有されているものをお選びください。
                 </Text>
                 {history.map((v) => (
                   <TouchableOpacity key={v.id} onPress={() => run(() => selectVehicle(v.id))} disabled={busy}>
@@ -290,6 +363,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     marginBottom: spacing.md,
   },
+  /* ナンバーの4枠。地名・分類番号・ひらがな・一連番号の並びに合わせる */
+  plateRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  plateInput: {
+    flexBasis: 0,
+    minWidth: 0,
+    textAlign: "center",
+    paddingHorizontal: 4,
+  },
+  plateArea: { flex: 2.3 },
+  plateClass: { flex: 1.8 },
+  plateKana: { flex: 1.2 },
+  plateNumber: { flex: 2.6 },
   addButton: { marginTop: spacing.xs },
   linkRow: { marginTop: spacing.md, alignItems: "center" },
   link: {

@@ -152,7 +152,7 @@ export default function HomeScreen() {
         {/* 01 ヒーロー：黒地にロゴだけを置く。
             写真は「どの車を出すか」で印象が偏るうえ、ロゴが小さく埋もれていた。
             黒・金・明朝という世界観は、余白とロゴの大きさで出す。 */}
-        <View style={[styles.hero, { paddingTop: insets.top + spacing.xxl }]}>
+        <View style={[styles.hero, { paddingTop: insets.top + spacing.xl }]}>
           <Image source={require("@/assets/logo.png")} style={styles.heroLogo} resizeMode="contain" />
         </View>
 
@@ -169,33 +169,38 @@ export default function HomeScreen() {
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
 
-        {/* 04 おもちのお車。
-            ご登録が無い方には案内を出す。乗り換えの多い業態なので、
-            ご来店の記録から自分で選んでいただく（vehicles.tsx 冒頭を参照）。 */}
+        {/* 04 車両。ご登録が無ければ「車両登録」として案内を出し、
+            あれば「登録済みの車両」として中身を出す。
+            乗り換えの多い業態なので、ご来店の記録から自分で選んで
+            いただく形にしている（vehicles.tsx 冒頭を参照）。 */}
         <TouchableOpacity
           style={styles.cars}
           onPress={() => router.push("/vehicles")}
           activeOpacity={0.85}
-          accessibilityLabel="お車の登録を開く"
+          accessibilityLabel={vehicles.length === 0 ? "車両登録を開く" : "登録済みの車両を開く"}
         >
           <View style={styles.carsHead}>
-            <Text style={styles.carsTitle}>お車</Text>
+            <Text style={styles.carsTitle}>{vehicles.length === 0 ? "車両登録" : "登録済みの車両"}</Text>
             <Feather name="chevron-right" size={18} color={colors.textLight} />
           </View>
           {vehicles.length === 0 ? (
             <Text style={styles.carsEmpty}>
-              おもちのお車をご登録ください。ご予約のときに選べるようになります。
+              おもちの車両をご登録ください。ご予約のときに選べるようになります。
             </Text>
           ) : (
-            vehicles.map((v) => (
-              <View key={v.id} style={styles.carRow}>
-                <Feather name="disc" size={16} color={colors.gold} />
-                <View style={styles.carMain}>
-                  <Text style={styles.carName}>{v.title}</Text>
-                  {v.plate ? <Text style={styles.carPlate}>{v.plate}</Text> : null}
+            vehicles.map((v) => {
+              // 色とナンバーは、入っているものだけを中黒でつなぐ
+              const detail = [v.color, v.plate].filter(Boolean).join("　");
+              return (
+                <View key={v.id} style={styles.carRow}>
+                  <Feather name="disc" size={16} color={colors.gold} />
+                  <View style={styles.carMain}>
+                    <Text style={styles.carName}>{v.title}</Text>
+                    {detail ? <Text style={styles.carPlate}>{detail}</Text> : null}
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </TouchableOpacity>
 
@@ -358,15 +363,19 @@ const styles = StyleSheet.create({
   hero: {
     backgroundColor: colors.dark,
     alignItems: "center",
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   /* ロゴは中央に大きく。横幅いっぱいまで広げず、左右に余白を残すことで
      高級感が出る（詰めるほど安っぽくなる）。 */
   /* ロゴには「Membership Car Wash Lounge」が入っているので、
      下に同じ文言を置かない。ロゴ1つと余白だけで見せる。 */
+  /* ★ 大きさは元画像（786×400）を超えないところで止める。
+     以前は高さ118ptで置いていたが、3倍の端末では354px必要になり、
+     400pxしかない元画像が引き伸ばされて縁がガビガビになっていた。
+     高さ60ptなら180pxで収まるので、拡大せずに済む。 */
   heroLogo: {
-    width: "72%",
-    height: 118,
+    width: "56%",
+    height: 60,
     tintColor: colors.white,
   },
   greet: {
