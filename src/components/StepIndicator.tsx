@@ -8,7 +8,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
-const STEP_LABELS = ["お車", "メニュー", "店舗・日時", "確認"];
+const STEP_LABELS = ["店舗・日時", "お車", "メニュー", "確認"];
 
 export function StepIndicator({ current }: { current: 1 | 2 | 3 | 4 }) {
   return (

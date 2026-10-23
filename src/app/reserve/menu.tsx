@@ -24,6 +24,7 @@ import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
+import { findShop } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 import type { MenuGroup, MenuItem } from "@/lib/types";
 
@@ -49,7 +50,7 @@ function animateNext() {
 
 export default function MenuSelectScreen() {
   const router = useRouter();
-  const { menu, category, selections, toggleItem, setOptionIndex, setQty, summary } = useReservation();
+  const { menu, category, selections, toggleItem, setOptionIndex, setQty, summary, shop } = useReservation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<"wash" | "coating">("wash");
 
@@ -169,23 +170,31 @@ export default function MenuSelectScreen() {
     );
   };
 
-  /* 電話のみ受付の案内。タップで電話をかけられる。 */
-  const renderPhoneNotice = () => (
-    <TouchableOpacity
-      style={styles.phoneNotice}
-      onPress={() => Linking.openURL("tel:0662678288")}
-      activeOpacity={0.8}
-    >
-      <Feather name="phone" size={16} color={colors.goldDeep} />
-      <View style={styles.phoneNoticeBody}>
-        <Text style={styles.phoneNoticeText}>
-          こちらのメニューは、お車の状態を確認したうえでお日にちを調整させていただくため、
-          お電話でのご予約のみ承っております。
-        </Text>
-        <Text style={styles.phoneNoticeTel}>06-6267-8288（受付 10:00〜19:00）</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  /* 電話のみ受付の案内。タップで電話をかけられる。
+     ★ かける先は、お選びいただいた店舗の番号にする（2026-10-23 発注者の要望）。
+       本社の代表番号にかかっても、その店舗の状況は分からないため。
+       店舗が未選択のときだけ代表番号を出す。 */
+  const renderPhoneNotice = () => {
+    const picked = findShop(shop);
+    const tel = picked ? picked.tel : "06-6267-8288";
+    const label = picked ? picked.name : "代表";
+    return (
+      <TouchableOpacity
+        style={styles.phoneNotice}
+        onPress={() => Linking.openURL("tel:" + tel.replace(/-/g, ""))}
+        activeOpacity={0.8}
+      >
+        <Feather name="phone" size={16} color={colors.goldDeep} />
+        <View style={styles.phoneNoticeBody}>
+          <Text style={styles.phoneNoticeText}>
+            こちらのメニューは、お車の状態を確認したうえでお日にちを調整させていただくため、
+            お電話でのご予約のみ承っております。
+          </Text>
+          <Text style={styles.phoneNoticeTel}>{tel}（{label}・受付 10:00〜19:00）</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderGroup = (group: MenuGroup) => (
     <View key={group.id} style={styles.groupBlock}>
@@ -222,7 +231,7 @@ export default function MenuSelectScreen() {
     <View style={styles.flex}>
       <ReserveHeader />
       <ScrollView contentContainerStyle={styles.content}>
-        <StepIndicator current={2} />
+        <StepIndicator current={3} />
         <Text style={styles.heading}>メニューを選択</Text>
 
         <View style={styles.tabRow}>
@@ -260,7 +269,7 @@ export default function MenuSelectScreen() {
         </View>
         <GoldButton
           title="次へ"
-          onPress={() => router.push("/reserve/datetime")}
+          onPress={() => router.push("/reserve/confirm")}
           disabled={summary.isEmpty}
           style={styles.bottomBarButton}
         />

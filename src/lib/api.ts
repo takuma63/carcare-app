@@ -418,6 +418,37 @@ export interface SlotsResult {
   ok: true;
   booked: string[];
 }
+/* ---------- availability（週間の空き状況 ○△×−） ----------
+   Web予約（index.html）と同じAPIを使う。1週間ぶんの各時間枠について
+   状態が返る。アプリでも同じ見せ方にするため（2026-10-23 発注者の指摘。
+   会議で決まっていたのにアプリ側だけ直していなかった）。
+
+   状態： open   ○ 予約できる
+          cutoff △ Web受付は締切。お電話なら空いている場合がある
+          full   × 埋まっている
+          closed − 受付時間外 */
+export type SlotState = "open" | "cutoff" | "full" | "closed";
+export interface AvailabilityDay {
+  /** YYYY-MM-DD */
+  date: string;
+  /** 0=日曜 */
+  weekday: number;
+  slots: Record<string, SlotState>;
+}
+export interface AvailabilityResult {
+  ok: true;
+  shop: string;
+  /** "10:00" 〜 "18:00" */
+  times: string[];
+  days: AvailabilityDay[];
+}
+export function fetchAvailability(shop: string, startDate: string, days: number) {
+  return request<AvailabilityResult>("availability", {
+    body: { shop, start_date: startDate, days },
+    auth: false,
+  });
+}
+
 export function fetchSlots(shop: string, date: string) {
   return request<SlotsResult>("slots", { body: { shop, date }, auth: false });
 }

@@ -93,32 +93,16 @@ export default function HomeScreen() {
     }
   };
 
-  /* クーポンとスタンプ。取れなくてもホームは表示する（補助的な情報のため） */
+  /* クーポン・スタンプ・回数券・お車。取れなくてもホームは表示する（補助的な情報のため）。
+     ★ 4つを順番に待つと、2番目のスタンプが目に見えて遅れて出てくる
+       （2026-10-23 発注者の指摘）。まとめて投げて、揃ったものから反映する。 */
   const loadRewards = async () => {
-    try {
-      const r = await fetchMyCoupons();
-      setCouponCount(r.available_count ?? 0);
-    } catch {
-      // 静かに無視する
-    }
-    try {
-      const st = await fetchMyStamps();
-      setStamp(st.card);
-    } catch {
-      // 静かに無視する
-    }
-    try {
-      const pp = await fetchMyPrepaid();
-      setPrepaid(pp.balance);
-    } catch {
-      // 静かに無視する
-    }
-    try {
-      const v = await fetchMyVehicles();
-      setVehicles(v.selected ?? []);
-    } catch {
-      // 静かに無視する
-    }
+    await Promise.allSettled([
+      fetchMyCoupons().then((r) => setCouponCount(r.available_count ?? 0)),
+      fetchMyStamps().then((st) => setStamp(st.card)),
+      fetchMyPrepaid().then((pp) => setPrepaid(pp.balance)),
+      fetchMyVehicles().then((v) => setVehicles(v.selected ?? [])),
+    ]);
   };
 
   useEffect(() => {
@@ -540,9 +524,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     padding: spacing.md,
-    marginBottom: spacing.md,
-    backgroundColor: colors.bgSub,
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.white,
     borderRadius: radius,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderLeftWidth: 3,
     borderLeftColor: colors.gold,
   },
@@ -551,18 +538,21 @@ const styles = StyleSheet.create({
   prepaidValue: { fontFamily: fonts.num, fontVariant: ["tabular-nums"], fontSize: 26, color: colors.text },
 
   /* クーポン・スタンプの案内バナー */
+  /* ★ 左右の余白は、上下に並ぶ「車両登録」「ご利用履歴」と同じ spacing.lg にする。
+     spacing.md だと8pxぶん外にはみ出して、列が揃わない（2026-10-23 指摘）。 */
   reward: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
     padding: spacing.md,
     backgroundColor: colors.white,
     borderRadius: radius,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderLeftWidth: 3,
     borderLeftColor: colors.gold,
-    ...shadow,
   },
   rewardIcon: {
     width: 40,
