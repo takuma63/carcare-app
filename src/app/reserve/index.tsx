@@ -247,7 +247,6 @@ export default function DateTimeScreen() {
             >
               <View style={styles.storeBody}>
                 <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{name}</Text>
-                <Text style={styles.storePlace}>{findShop(name)?.access}</Text>
               </View>
               {shop === name && <Feather name="check" size={18} color={colors.gold} />}
             </TouchableOpacity>
@@ -699,13 +698,7 @@ const styles = StyleSheet.create({
     borderColor: colors.gold,
     backgroundColor: "#fdf8ee",
   },
-  storeBody: { flex: 1, gap: 2 },
-  storePlace: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.textLight,
-    lineHeight: 17,
-  },
+  storeBody: { flex: 1 },
   storeName: {
     fontFamily: fonts.sans,
     fontSize: fontSize.body,
