@@ -40,8 +40,6 @@ interface ReservationState {
   setPreferredTime: (time: string | null) => void;
   nominatedStaffId: string | null;   // 指名スタッフのid（1名のみ・未指名はnull）
   setNominatedStaffId: (id: string | null) => void;
-  skipDateTime: boolean;
-  setSkipDateTime: (v: boolean) => void;
   note: string;
   setNote: (note: string) => void;
 
@@ -70,7 +68,6 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
   const [preferredDate, setPreferredDate] = useState<string | null>(null);
   const [preferredTime, setPreferredTime] = useState<string | null>(null);
   const [nominatedStaffId, setNominatedStaffId] = useState<string | null>(null);
-  const [skipDateTime, setSkipDateTime] = useState(false);
   const [note, setNote] = useState("");
 
   const loadMenu = useCallback(async () => {
@@ -161,7 +158,6 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
     setPreferredDate(null);
     setPreferredTime(null);
     setNominatedStaffId(null);
-    setSkipDateTime(false);
     setNote("");
   }, []);
 
@@ -191,8 +187,6 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
     setPreferredTime,
     nominatedStaffId,
     setNominatedStaffId,
-    skipDateTime,
-    setSkipDateTime,
     note,
     setNote,
     needsCategory: needsCategoryValue,

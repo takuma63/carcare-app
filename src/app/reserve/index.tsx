@@ -67,7 +67,7 @@ export default function DateTimeScreen() {
   const router = useRouter();
   const {
     menu, loadMenu, shop, setShop, preferredDate, setPreferredDate, preferredTime, setPreferredTime,
-    nominatedStaffId, setNominatedStaffId, skipDateTime, setSkipDateTime,
+    nominatedStaffId, setNominatedStaffId,
   } = useReservation();
 
   /* ★ メニュー情報には指名の設定（対象店舗・指名料・スタッフ名簿）が入っている。
@@ -190,7 +190,6 @@ export default function DateTimeScreen() {
       setPreferredTime(null);
       setOffDays({});
     } else {
-      setSkipDateTime(false);   // ご指名は日時が決まらないと成立しない
       setPreferredTime(null);
     }
   };
@@ -202,7 +201,7 @@ export default function DateTimeScreen() {
 
   /* 表示している一週間の空き状況を取る（Webと同じ /api/availability） */
   useEffect(() => {
-    if (!shop || skipDateTime) {
+    if (!shop) {
       setDays([]);
       setTimes([]);
       return;
@@ -235,7 +234,7 @@ export default function DateTimeScreen() {
       })
       .finally(() => { if (!cancelled) setLoadingSlots(false); });
     return () => { cancelled = true; };
-  }, [shop, weekStart, skipDateTime]);
+  }, [shop, weekStart]);
 
   /* その一週間の「○」の数と、いちばん早い空き枠 */
   const summarize = (list: AvailabilityDay[]) => {
@@ -282,16 +281,7 @@ export default function DateTimeScreen() {
     setPreferredTime(time);
   };
 
-  const handleToggleSkip = () => {
-    const next = !skipDateTime;
-    setSkipDateTime(next);
-    if (next) {
-      setPreferredDate(null);
-      setPreferredTime(null);
-    }
-  };
-
-  const canProceed = !!shop && (skipDateTime || (!!preferredDate && !!preferredTime));
+  const canProceed = !!shop && !!preferredDate && !!preferredTime;
 
   return (
     <View style={styles.flex}>
@@ -381,17 +371,7 @@ export default function DateTimeScreen() {
             （ご指名の場合はスタッフが決まるまで出勤日が分からないため） */}
         {(nomMode === "no" || (nomMode === "yes" && !!nominatedStaffId)) && (
         <View onLayout={onBlockLayout("cal")}>
-        {nomMode === "no" && (
-          <TouchableOpacity style={styles.skipRow} onPress={handleToggleSkip}>
-            <View style={[styles.checkbox, skipDateTime && styles.checkboxOn]}>
-              {skipDateTime && <Feather name="check" size={14} color={colors.white} />}
-            </View>
-            <Text style={styles.skipText}>日時は店頭で調整する</Text>
-          </TouchableOpacity>
-        )}
-
-        {!skipDateTime && (
-          <>
+        <>
             {/* 週の送り。Web予約（index.html）と同じ操作にしてある */}
             <View style={styles.weekNav}>
               <TouchableOpacity
@@ -563,7 +543,6 @@ export default function DateTimeScreen() {
               </View>
             ) : null}
           </>
-        )}
         </View>
         )}
       </ScrollView>
@@ -777,30 +756,6 @@ const styles = StyleSheet.create({
   },
   storeNameOn: {
     fontFamily: fonts.sansMedium,
-  },
-  skipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxOn: {
-    backgroundColor: colors.gold,
-    borderColor: colors.gold,
-  },
-  skipText: {
-    fontFamily: fonts.sans,
-    fontSize: fontSize.body,
-    color: colors.text,
   },
   dateRow: {
     gap: spacing.xs,
