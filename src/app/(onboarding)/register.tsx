@@ -2,8 +2,8 @@
    register.tsx  ―  新規登録
    ------------------------------------------------------------
    STEP 1／4  お名前（お名前・フリガナ）
-   STEP 2／4  ログインに使う情報（メールアドレス・パスワード／確認用も）
-   STEP 3／4  お客様のこと（電話番号＝必須／誕生月・会社名＝任意）
+   STEP 2／4  ログイン情報（メールアドレス・パスワード／確認用も）
+   STEP 3／4  お客様情報（電話番号＝必須／誕生月・会社名＝任意）
    STEP 4／4  確認コード（Microsoft がメールに送る6桁）
    （＋）     ご本人の確認（電話番号が台帳と一致した方だけ）
 
@@ -338,8 +338,7 @@ export default function RegisterScreen() {
           {step === "name" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>カーケアセンター{"\n"}公式アプリへようこそ</Text>
-                <Text style={styles.lead}>まずは、お名前を教えてください。</Text>
+                <Text style={[styles.title, styles.titleAlone]}>カーケアセンター{"\n"}公式アプリへようこそ</Text>
               </Appear>
 
               <View style={styles.form}>
@@ -373,7 +372,7 @@ export default function RegisterScreen() {
           {step === "login" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>ログインに使う情報</Text>
+                <Text style={styles.title}>ログイン情報</Text>
                 <Text style={styles.lead}>
                   次回からは、このメールアドレスとパスワードでログインしていただけます。
                 </Text>
@@ -437,10 +436,7 @@ export default function RegisterScreen() {
           {step === "info" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>お客様のこと</Text>
-                <Text style={styles.lead}>
-                  ご来店の記録と結びつけるため、電話番号をお伺いしています。
-                </Text>
+                <Text style={[styles.title, styles.titleAlone]}>お客様情報</Text>
               </Appear>
 
               <View style={styles.form}>
@@ -456,7 +452,7 @@ export default function RegisterScreen() {
                     placeholder="例：09012345678（ハイフンなし）"
                   />
                   <Text style={styles.fieldHint}>
-                    ご来店時にお伝えいただいている電話番号をご入力ください。これまでのご利用履歴と回数券の残高が引き継がれます。
+                    電話番号をご入力ください。以前からご利用いただいているお客様は、これまでのご利用履歴が引き継がれます。
                   </Text>
                 </Appear>
 
@@ -846,6 +842,11 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 34,
     marginBottom: spacing.sm,
+  },
+  /* 説明文を置かない段は、見出しの下に余白を持たせる
+     （lead が受け持っていた間隔のぶん） */
+  titleAlone: {
+    marginBottom: spacing.xl,
   },
   lead: {
     fontFamily: fonts.sans,
