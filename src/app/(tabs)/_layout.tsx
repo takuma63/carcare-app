@@ -45,7 +45,7 @@ export default function TabsLayout() {
     useCallback(() => {
       let alive = true;
       fetchMyAnnouncements()
-        .then((r) => { if (alive) setUnread(r.unread); })
+        .then((r) => { if (alive) setUnread(r.unread ?? 0); })
         .catch(() => {});
       return () => { alive = false; };
     }, [])

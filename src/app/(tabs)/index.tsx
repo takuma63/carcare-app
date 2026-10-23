@@ -115,7 +115,7 @@ export default function HomeScreen() {
     }
     try {
       const v = await fetchMyVehicles();
-      setVehicles(v.selected);
+      setVehicles(v.selected ?? []);
     } catch {
       // 静かに無視する
     }
