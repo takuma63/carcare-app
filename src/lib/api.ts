@@ -340,6 +340,14 @@ export interface Nomination {
   staffLabel: string;
   staff?: NominationStaff[];
 }
+/* お支払い方法。大元は carcare-reservation/payment-data.js で、
+   メニューAPIが同じ一覧を配る。アプリ側に書き写すと、変えたときに
+   片方だけ古くなるため持たない。 */
+export interface PaymentMethod {
+  id: string;
+  name: string;
+}
+
 export interface MenuResult {
   ok: true;
   groups: MenuGroup[];
@@ -347,6 +355,7 @@ export interface MenuResult {
   size_guide: string;
   nickname_guide: string;
   nomination?: Nomination;
+  payment_methods?: PaymentMethod[];
 }
 
 const MENU_CACHE_KEY = "ccc_menu_cache";
@@ -539,6 +548,8 @@ export interface SubmitBookingParams {
   nominated_staff_id?: string | null;
   /** 適用するクーポン（coupon_grants.id）。割引額はサーバーが計算する */
   coupon_grant_id?: string | null;
+  /** 店頭でのお支払い方法（cash / credit / emoney / prepaid） */
+  payment_method?: string | null;
 }
 export interface SubmitBookingResult {
   ok: true;

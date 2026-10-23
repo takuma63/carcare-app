@@ -57,6 +57,18 @@ export default function ConfirmScreen() {
     useReservation();
 
   const [payMethod, setPayMethod] = useState<"store" | "online">("store");
+  /* 店頭での支払い方法（現金・カード・電子マネー・回数券）。
+     一覧はメニューAPIが配る（大元は payment-data.js）。
+     取れなかったときのために、既定の並びも持っておく。 */
+  const payOptions = menu?.payment_methods?.length
+    ? menu.payment_methods
+    : [
+        { id: "cash", name: "現金" },
+        { id: "credit", name: "クレジットカード" },
+        { id: "emoney", name: "電子マネー" },
+        { id: "prepaid", name: "回数券" },
+      ];
+  const [storeMethod, setStoreMethod] = useState<string>("cash");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +134,8 @@ export default function ConfirmScreen() {
     nominated: isNominated,
     nominated_staff_id: isNominated && nominatedStaff ? nominatedStaff.id : null,
     coupon_grant_id: selectedCoupon ? selectedCoupon.grant_id : null,
+    /* 事前決済のときは店頭での支払いが発生しないので送らない */
+    payment_method: payMethod === "store" ? storeMethod : null,
   });
 
   const finish = (result: SubmitBookingResult, paidAmount: number | null) => {
@@ -299,12 +313,28 @@ export default function ConfirmScreen() {
           )}
 
           <Text style={styles.sectionLabel}>お支払い方法</Text>
-          <TouchableOpacity style={styles.paymentRow} onPress={() => setPayMethod("store")}>
-            <View style={[styles.radio, payMethod === "store" && styles.radioOn]}>
-              {payMethod === "store" && <View style={styles.radioDot} />}
-            </View>
-            <Text style={styles.paymentText}>店頭でお支払い</Text>
-          </TouchableOpacity>
+          {/* 店頭でのお支払い。Web予約と同じ選択肢にする（2026-10-23 発注者の指摘）。
+              以前は「店頭でお支払い」の1つしか無く、どれで払うか伝わらなかった。 */}
+          {payOptions.map((m) => {
+            const on = payMethod === "store" && storeMethod === m.id;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                style={styles.paymentRow}
+                onPress={() => { setPayMethod("store"); setStoreMethod(m.id); }}
+              >
+                <View style={[styles.radio, on && styles.radioOn]}>
+                  {on && <View style={styles.radioDot} />}
+                </View>
+                <Text style={styles.paymentText}>{m.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {payMethod === "store" && storeMethod === "prepaid" && (
+            <Text style={styles.paymentNote}>
+              作業が終わったあと、店舗で残高から差し引きます。残高が足りないぶんは別のお支払い方法で承ります。
+            </Text>
+          )}
           {/* 事前決済は鍵が設定されているときだけ出す。
               鍵が無いときに「近日対応」の押せない行を残すと、Appleの審査で
               未完成の画面（Guideline 2.1）と見なされる恐れがあるため、
