@@ -1,8 +1,13 @@
 /* ============================================================
-   reserve/index.tsx  ―  S3 車種入力（予約ステップ1/4。SPEC.md §4.2）
+   reserve/car.tsx  ―  お車（予約ステップ2/4）
    ------------------------------------------------------------
    既存Web予約（carcare-reservation/reserve.js）の体験を移植：
    入力が止まったら自動でAI判定、失敗時は手動カテゴリー選択で進める。
+
+   ★ 登録済みの車両から選べるようにしてある（2026-10-23 発注者の指摘）。
+     ホームの「車両登録」で「ご予約の際に選べるようになります」と
+     お伝えしているのに、ここで使っていなかった。毎回メーカー名から
+     打ち直すことになり、登録した意味が無い状態だった。
 ============================================================ */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -18,12 +23,13 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
 import { useReservation } from "@/lib/reservation-context";
-import { askAI, ApiError } from "@/lib/api";
+import { askAI, ApiError, fetchMyVehicles, type Vehicle } from "@/lib/api";
 import { buildCategorizePrompt, parseJudge } from "@/lib/car-judge";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
@@ -50,6 +56,23 @@ export default function CarInputScreen() {
 
   const [judging, setJudging] = useState(false);
   const lastJudgedRef = useRef("");
+
+  /* 登録済みのお車。取れなくても手入力で進めるので、失敗は黙って無視する。 */
+  const [myCars, setMyCars] = useState<Vehicle[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchMyVehicles()
+      .then((r) => { if (!cancelled) setMyCars(r.selected ?? []); })
+      .catch(() => { /* 未登録・通信失敗。手入力で進めていただく */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  /* 登録済みのお車を選ぶ。入力欄に入れて、そのまま判定にかける。 */
+  const pickMyCar = (v: Vehicle) => {
+    const text = [v.maker, v.model].filter(Boolean).join(" ").trim() || v.title;
+    setCarInput(text);
+    runJudge(text);
+  };
 
   useEffect(() => {
     track("booking_started", {});
@@ -132,6 +155,34 @@ export default function CarInputScreen() {
         同じ車名でもメーカーによって大きさが異なるため、メーカー名があると正確に判定できます。
       </Text>
 
+      {/* 登録済みのお車。押すだけで入力＋サイズの判定まで済む。 */}
+      {myCars.length > 0 && (
+        <View style={styles.myCars}>
+          <Text style={styles.myCarsLabel}>登録済みの車両から選ぶ</Text>
+          {myCars.map((v) => {
+            const text = [v.maker, v.model].filter(Boolean).join(" ").trim() || v.title;
+            const picked = carInput.trim() === text;
+            return (
+              <TouchableOpacity
+                key={v.id}
+                style={[styles.myCar, picked && styles.myCarOn]}
+                onPress={() => pickMyCar(v)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.myCarBody}>
+                  <Text style={styles.myCarName}>{v.title}</Text>
+                  {(v.color || v.plate) && (
+                    <Text style={styles.myCarSub}>{[v.color, v.plate].filter(Boolean).join("　")}</Text>
+                  )}
+                </View>
+                {picked && <Feather name="check" size={18} color={colors.gold} />}
+              </TouchableOpacity>
+            );
+          })}
+          <Text style={styles.myCarsNote}>別のお車の場合は、下に車種をご入力ください。</Text>
+        </View>
+      )}
+
       <TextInput
         value={carInput}
         onChangeText={setCarInput}
@@ -201,6 +252,36 @@ export default function CarInputScreen() {
 }
 
 const styles = StyleSheet.create({
+  /* 登録済みのお車から選ぶ */
+  myCars: {
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  myCarsLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    color: colors.text,
+  },
+  myCar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    backgroundColor: colors.white,
+  },
+  myCarOn: {
+    borderColor: colors.gold,
+    backgroundColor: "#fdf8ee",
+  },
+  myCarBody: { flex: 1, gap: 2 },
+  myCarName: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
+  myCarSub: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+  myCarsNote: { fontFamily: fonts.sans, fontSize: 12, color: colors.textLight },
+
   flex: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   center: {

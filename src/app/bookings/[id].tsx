@@ -53,7 +53,7 @@ export default function BookingDetailScreen() {
   const shortToken = booking.public_token.slice(0, 8).toUpperCase();
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
+    <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: spacing.lg }]}>
       <View style={styles.headerRow}>
         <Text style={styles.tokenLabel}>予約番号 {shortToken}</Text>
         <StatusBadge status={booking.status} />
