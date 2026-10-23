@@ -74,7 +74,12 @@ type Step = "name" | "login" | "info" | "code" | "confirm" | "done";
 
 /** 進捗バーに数える段階。confirm と done は「おまけ」なので数えない */
 const FLOW: Step[] = ["name", "login", "info", "code"];
-const CODE_LENGTH = 6;
+
+/* ★ 確認コードの桁数は固定しない。Entra が challenge の応答で code_length を
+   返してくるので、それに合わせる（実際は8桁）。
+   ここを6で固定していたせいで、コードが入りきらず登録できなかった。
+   取れなかったときのために 8 を既定にしてある（entra.ts と揃えている）。 */
+const CODE_LENGTH_FALLBACK = 8;
 
 interface Candidate {
   name: string;
@@ -102,6 +107,7 @@ export default function RegisterScreen() {
   const [birthMonth, setBirthMonth] = useState<number | null>(null);
   // ④ 確認コード
   const [code, setCode] = useState("");
+  const [codeLength, setCodeLength] = useState(CODE_LENGTH_FALLBACK);
   const [sentTo, setSentTo] = useState("");
   const [flowToken, setFlowToken] = useState("");
   // ⑤ ご本人の確認
@@ -207,6 +213,7 @@ export default function RegisterScreen() {
       const sent = await entra.signUpSendCode(started);
       setFlowToken(sent.continuationToken);
       setSentTo(sent.target || email.trim());
+      setCodeLength(sent.codeLength || CODE_LENGTH_FALLBACK);
       setCode("");
       go("code");
     } catch (e) {
@@ -226,7 +233,7 @@ export default function RegisterScreen() {
   const submitCode = async (entered?: string) => {
     const value = (entered ?? code).trim();
     setError(null);
-    if (value.length < CODE_LENGTH) return setError("確認コードを入力してください");
+    if (value.length < codeLength) return setError("確認コードを入力してください");
 
     setBusy(true);
     try {
@@ -471,13 +478,14 @@ export default function RegisterScreen() {
               <Appear reduce={reduceMotion} index={0}>
                 <Text style={styles.title}>確認コードの入力</Text>
                 <Text style={styles.lead}>
-                  {sentTo} 宛に{CODE_LENGTH}桁の確認コードをお送りしました。{"\n"}メールをご確認のうえ、ご入力ください。
+                  {sentTo} 宛に{codeLength}桁の確認コードをお送りしました。{"\n"}メールをご確認のうえ、ご入力ください。
                 </Text>
               </Appear>
 
               <Appear reduce={reduceMotion} index={1}>
                 <CodeInput
                   value={code}
+                  length={codeLength}
                   onChange={setCode}
                   onComplete={(v) => submitCode(v)}
                   disabled={busy}
@@ -616,9 +624,11 @@ function PasswordMeter({ password, reduce }: { password: string; reduce: boolean
    6桁そろったら自動で送信する。
    ============================================================ */
 function CodeInput({
-  value, onChange, onComplete, disabled, reduce,
+  value, length, onChange, onComplete, disabled, reduce,
 }: {
   value: string;
+  /** 桁数。Entra が返す code_length に合わせる（固定しない） */
+  length: number;
   onChange: (v: string) => void;
   onComplete: (v: string) => void;
   disabled?: boolean;
@@ -628,7 +638,7 @@ function CodeInput({
   return (
     <TouchableOpacity activeOpacity={1} onPress={() => ref.current?.focus()} style={styles.codeWrap}>
       <View style={styles.codeRow}>
-        {Array.from({ length: CODE_LENGTH }, (_, i) => (
+        {Array.from({ length }, (_, i) => (
           <CodeBox key={i} char={value[i] ?? ""} active={i === value.length} reduce={reduce} />
         ))}
       </View>
@@ -637,14 +647,14 @@ function CodeInput({
         style={styles.codeHidden}
         value={value}
         onChangeText={(t) => {
-          const digits = t.replace(/[^0-9]/g, "").slice(0, CODE_LENGTH);
+          const digits = t.replace(/[^0-9]/g, "").slice(0, length);
           onChange(digits);
-          if (digits.length === CODE_LENGTH) onComplete(digits);
+          if (digits.length === length) onComplete(digits);
         }}
         keyboardType="number-pad"
         autoComplete="one-time-code"
         textContentType="oneTimeCode"
-        maxLength={CODE_LENGTH}
+        maxLength={length}
         editable={!disabled}
         autoFocus
         caretHidden
@@ -897,7 +907,12 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   codeBox: {
-    width: 46,
+    /* 桁数が変わっても収まるように、幅は固定しないで分け合う。
+       46pt固定だと8桁で画面からはみ出す。 */
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    maxWidth: 52,
     height: 58,
     borderWidth: 1,
     borderColor: colors.border,
@@ -912,7 +927,7 @@ export const styles = StyleSheet.create({
   codeChar: {
     fontFamily: fonts.num,
     fontVariant: ["tabular-nums"],
-    fontSize: fontSize.h2,
+    fontSize: fontSize.h3,
     color: colors.text,
   },
   codeHidden: {
