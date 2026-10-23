@@ -10,7 +10,7 @@
      アプリは「お車→メニュー→店舗・日時」の並びと日付チップのままだった。
      ・順番を 店舗・日時 → お車 → メニュー → 確認 に変更
      ・空き状況はWebと同じ /api/availability を使い、○△×− で出す
-         ○ 予約できる  △ Web受付は締切（お電話で）  × 満席  − 受付時間外
+         ○ 予約できる  △ Web受付は締切（お電話で）  × ご予約でいっぱい  − 受付時間外
 
    ★ ご指名について（2026-10-22 発注者の要望。Web予約と同じ流れに揃えた）
      以前は「18:00の枠を選んで初めて指名欄が出る」形だったため、
@@ -495,7 +495,7 @@ export default function DateTimeScreen() {
             <View style={styles.legend}>
               <Text style={styles.legendItem}><Text style={styles.mark_open}>○</Text> 予約できます</Text>
               <Text style={styles.legendItem}><Text style={styles.mark_cutoff}>△</Text> Web受付は終了（お電話でご相談ください）</Text>
-              <Text style={styles.legendItem}><Text style={styles.mark_full}>×</Text> 満席</Text>
+              <Text style={styles.legendItem}><Text style={styles.mark_full}>×</Text> ご予約でいっぱいです</Text>
               <Text style={styles.legendItem}><Text style={styles.mark_closed}>−</Text> 受付時間外</Text>
               {nomMode === "yes" && nominatedStaffName ? (
                 <Text style={styles.legendItem}>「休」は {nominatedStaffName} のお休みの日です</Text>

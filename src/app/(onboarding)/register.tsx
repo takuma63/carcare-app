@@ -22,10 +22,15 @@
      （いたずら照会で顧客名簿を引かれないようにするため）。
      したがってコードの検証後にしか呼べない。
 
-   ★ パスワードの最低文字数は Microsoft 側で8文字に固定されている
-     （実際に試して確認：7文字以下は password_too_short で弾かれる）。
-     テナントの設定でも変えられないので、ここで短くしても意味がない。
-     打ち間違いを防ぐために確認用の入力を置いている。
+   ★ パスワードの条件は Microsoft 側で決まっていて、変えられない。
+     実際に試して確かめた（2026-10-23）：
+       ・8文字以上（7文字以下は password_too_short）
+       ・大文字・小文字・数字・記号のうち3種類以上
+         （2種類だと15文字でも password_too_weak）
+       ・よくあるパスワードは別途 password_banned で弾かれる
+     画面にそのまま書き、送信前に同じ判定をしている
+     （送ってから英語のエラーが返ると理由が掴めないため）。
+     打ち間違いを防ぐために確認用の入力も置いている。
 
    ★ 電話番号は必須。ご来店の記録（お一人あたり平均4件）と結びつける鍵で、
      ここが空だと回数券の残高も履歴も引き継げない。
@@ -80,6 +85,21 @@ import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 type Step = "name" | "login" | "info" | "code" | "confirm" | "done";
+
+/* パスワードに含まれる文字の種類を数える。
+   ★ Microsoft Entra の条件は「8文字以上」かつ
+     「大文字・小文字・数字・記号のうち3種類以上」。
+     実際に試して確かめた（2026-10-23）。2種類だと15文字でも
+     password_too_weak で弾かれる。ここで同じ判定をしておかないと、
+     送信してから英語のエラーが返ってきて、お客様が理由を掴めない。 */
+function passwordKinds(pw: string): number {
+  let n = 0;
+  if (/[a-z]/.test(pw)) n++;
+  if (/[A-Z]/.test(pw)) n++;
+  if (/[0-9]/.test(pw)) n++;
+  if (/[^a-zA-Z0-9]/.test(pw)) n++;
+  return n;
+}
 
 /** 進捗バーに数える段階。confirm と done は「おまけ」なので数えない */
 const FLOW: Step[] = ["name", "login", "info", "code"];
@@ -212,6 +232,9 @@ export default function RegisterScreen() {
     if (!mail) return setError("メールアドレスを入力してください");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setError("メールアドレスの形式をご確認ください");
     if (password.length < 8) return setError("パスワードは8文字以上でご設定ください");
+    if (passwordKinds(password) < 3) {
+      return setError("大文字・小文字・数字・記号のうち3種類以上を含めてください");
+    }
     if (password !== password2) return setError("パスワードが一致しません。もう一度ご確認ください");
     go("info");
   };
@@ -402,7 +425,9 @@ export default function RegisterScreen() {
                     autoCapitalize="none"
                     placeholder="8文字以上"
                   />
-                  <PasswordMeter password={password} reduce={reduceMotion} />
+                  <Text style={styles.fieldHint}>
+                    8文字以上で、大文字・小文字・数字・記号のうち3種類以上を含めてください。
+                  </Text>
                 </Appear>
                 <Appear reduce={reduceMotion} index={3}>
                   <Field
@@ -608,49 +633,6 @@ function Appear({ index = 0, reduce, children }: { index?: number; reduce: boole
     >
       {children}
     </Animated.View>
-  );
-}
-
-/* ============================================================
-   パスワードの手応え。長さと文字の種類だけで測る簡単なもので、
-   足切りには使わない（8文字以上かどうかは送信時に見る）。
-   ============================================================ */
-function PasswordMeter({ password, reduce }: { password: string; reduce: boolean }) {
-  const score = (() => {
-    if (!password) return 0;
-    let s = 0;
-    if (password.length >= 8) s++;
-    if (password.length >= 12) s++;
-    if (/[a-z]/.test(password) && /[A-Z0-9]/.test(password)) s++;
-    if (/[^a-zA-Z0-9]/.test(password)) s++;
-    return Math.min(s, 3);
-  })();
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(v, {
-      toValue: score / 3,
-      duration: reduce ? 0 : 260,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [score, reduce, v]);
-  if (!password) return null;
-  const label = ["短すぎます", "もう少し長くできます", "よい強さです", "とても強いパスワードです"][score];
-  return (
-    <View style={styles.meterWrap}>
-      <View style={styles.meterTrack}>
-        <Animated.View
-          style={[
-            styles.meterFill,
-            {
-              width: v.interpolate({ inputRange: [0, 1], outputRange: ["8%", "100%"] }),
-              backgroundColor: score >= 2 ? colors.gold : colors.border,
-            },
-          ]}
-        />
-      </View>
-      <Text style={styles.meterText}>{label}</Text>
-    </View>
   );
 }
 
@@ -926,24 +908,6 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
 
-  /* パスワードの手応え */
-  meterWrap: {
-    marginTop: spacing.sm,
-    gap: 6,
-  },
-  meterTrack: {
-    height: 2,
-    backgroundColor: colors.border,
-    overflow: "hidden",
-  },
-  meterFill: {
-    height: 2,
-  },
-  meterText: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.textLight,
-  },
 
   /* 確認コードのマス */
   codeWrap: {
