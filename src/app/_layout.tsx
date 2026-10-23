@@ -124,7 +124,14 @@ function RootNavigator() {
    これをしないと、起動画面 → 読み込み中のぐるぐる → 本画面 と
    一瞬ちらつく。消えるときは短くフェードさせる。 */
 SplashScreen.preventAutoHideAsync().catch(() => { /* 既に消えている場合 */ });
-SplashScreen.setOptions?.({ duration: 320, fade: true });
+SplashScreen.setOptions?.({ duration: 420, fade: true });
+
+/* ★ 起動画面を出しておく最短の時間。
+   書体の読み込みは速いので、そのまま消すと一瞬で消えてしまい、
+   ロゴが出たことに気づけない（2026-10-23 発注者の指摘）。
+   フェードの420msと合わせて、だいたい1秒ちょうどで切り替わる。 */
+const MIN_SPLASH_MS = 1000;
+const bootAt = Date.now();
 
 export default function RootLayout() {
   const [cormorantLoaded] = useCormorantFonts({ CormorantGaramond_600SemiBold });
@@ -137,7 +144,12 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsReady) SplashScreen.hideAsync().catch(() => { /* 既に消えている場合 */ });
+    if (!fontsReady) return;
+    const rest = Math.max(0, MIN_SPLASH_MS - (Date.now() - bootAt));
+    const t = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => { /* 既に消えている場合 */ });
+    }, rest);
+    return () => clearTimeout(t);
   }, [fontsReady]);
 
   // 起動画面が出たままなので普段は見えない。消せなかったときの受け皿として残す。
