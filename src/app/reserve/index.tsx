@@ -20,15 +20,15 @@
      （出勤表＝/api/nomination-staff?from=&days=。入っているのは休みの日だけ）
 ============================================================ */
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, type LayoutChangeEvent } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
-import { fetchAvailabilityMany, fetchStaffShifts, type AvailabilityDay, type SlotState } from "@/lib/api";
+import { fetchAvailabilityMany, fetchStaffShifts, type AvailabilityDay, type NominationStaff, type SlotState } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
 import { ShopMap } from "@/components/ShopMap";
 import { SHOP_NAMES, findShop, neighborShops } from "@/lib/shops";
@@ -86,11 +86,68 @@ export default function DateTimeScreen() {
   const [nearby, setNearby] = useState<{ shop: string; days: AvailabilityDay[]; far: boolean }[]>([]);
   const [nearbyOpen, setNearbyOpen] = useState(false);
 
+  /* ★ 選ぶたびに、次に決めていただく場所まで自動で送る（2026-10-23 発注者の要望）。
+     画面が縦に長く、店舗を選んでも下に何があるか気づけないため。
+     測った位置へスクロールする（onLayout で控えておく）。 */
+  const scrollRef = useRef<ScrollView>(null);
+  const nomY = useRef(0);
+  const calY = useRef(0);
+  /* ★ 押した時点では送り先がまだ画面に無いことがある
+       （店舗を選んで初めて指名欄が出る、など）。
+       「ここへ送りたい」を控えておき、その場所が描かれたときに送る。 */
+  const pending = useRef<null | "nom" | "cal">(null);
+
+  const scrollTo = (y: number) => {
+    scrollRef.current?.scrollTo({ y: Math.max(y - 12, 0), animated: true });
+  };
+
+  /* 送り先が決まっていれば送る。まだ無ければ控えておく。 */
+  const goTo = (target: "nom" | "cal") => {
+    const y = target === "nom" ? nomY.current : calY.current;
+    if (y > 0) {
+      pending.current = null;
+      setTimeout(() => scrollTo(y), 60);
+    } else {
+      pending.current = target;
+    }
+  };
+
+  /* 各ブロックが描かれたときに呼ぶ。位置を控え、待っていた送りを実行する。 */
+  const onBlockLayout = (target: "nom" | "cal") => (e: LayoutChangeEvent) => {
+    const y = e.nativeEvent.layout.y;
+    if (target === "nom") nomY.current = y; else calY.current = y;
+    /* 指名を受け付けない店では指名欄が出ない。
+       「指名欄へ」を待ったままにせず、日時へ送る。 */
+    const takeOver = target === "cal" && pending.current === "nom" && !isNomShop;
+    if (pending.current === target || takeOver) {
+      pending.current = null;
+      setTimeout(() => scrollTo(y), 60);
+    }
+  };
+
   // 通常枠は全店 10:00〜18:00。ご指名は 18:00 の枠のみ
   // （nom.shop が null なら全店舗、店舗名なら当該店のみ）
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
-  const isNomShop = !!(nom && !!shop && (nom.shop == null || shop === nom.shop));
-  const staffList = nom?.staff ?? [];
+  /* ★ 指名制度は各店の店長のみで運用する（2026-10-23 発注者）。
+     お客様には、選んだ店舗に立つ方だけをお見せする。
+
+     名簿はメニュー情報にも入っているが、そちらは端末に24時間キャッシュされる。
+     店長が代わったときに古い名簿が出続けてしまうので、APIから取り直した
+     ものを優先する（取れないときだけキャッシュの値を使う）。 */
+  const [apiStaff, setApiStaff] = useState<NominationStaff[] | undefined>(undefined);
+  const fallbackStaff = (nom?.staff ?? []).filter((x) => !x.shops || x.shops.includes(shop ?? ""));
+  const staffList = apiStaff ?? fallbackStaff;
+  const isNomShop = !!(nom && !!shop && (nom.shop == null || shop === nom.shop) && staffList.length > 0);
+
+  /* 選んだ店舗に立つ方をサーバーから取り直す */
+  useEffect(() => {
+    if (!shop) { setApiStaff(undefined); return; }
+    let cancelled = false;
+    fetchStaffShifts(toDateKey(startOfToday()), WEEK_DAYS, shop)
+      .then((res) => { if (!cancelled && Array.isArray(res.staff)) setApiStaff(res.staff); })
+      .catch(() => { if (!cancelled) setApiStaff(undefined); });
+    return () => { cancelled = true; };
+  }, [shop]);
 
   /* ご指名の有無。null＝まだ選んでいない（店舗を選んだ直後の状態）。
      戻ってきたときに選び直さなくて済むよう、スタッフが残っていれば「する」から始める。 */
@@ -201,8 +258,14 @@ export default function DateTimeScreen() {
   /* 希望の店舗がこの一週間まったく空いていないときは、最初から開いて見せる */
   const nearbyAutoOpen = days.length > 0 && mine.open === 0;
 
-  /* 店舗を変えたら今週に戻す（別の店の週を見たまま混乱しないように） */
-  useEffect(() => { setWeekStart(startOfToday()); }, [shop]);
+  /* 店舗を変えたら今週に戻す（別の店の週を見たまま混乱しないように）。
+     店が変われば立つスタッフも変わるので、前の店で選んだ方は外す。 */
+  useEffect(() => {
+    setWeekStart(startOfToday());
+    if (nominatedStaffId && !staffList.some((x) => x.id === nominatedStaffId)) {
+      setNominatedStaffId(null);
+    }
+  }, [shop]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const today0 = startOfToday();
   const limit = horizonDate();
@@ -233,7 +296,7 @@ export default function DateTimeScreen() {
   return (
     <View style={styles.flex}>
       <ReserveHeader />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
         <StepIndicator current={1} />
         <Text style={styles.heading}>店舗・日時を選択</Text>
 
@@ -243,7 +306,15 @@ export default function DateTimeScreen() {
             <TouchableOpacity
               key={name}
               style={[styles.storeRow, shop === name && styles.storeRowOn]}
-              onPress={() => setShop(name)}
+              onPress={() => {
+                setShop(name);
+                /* 次に決めていただくところへ送る。
+                   指名を受け付けない店では指名欄が出ないので、
+                   そのときは日時へ送られる（下の goTo のフォールバック）。 */
+                nomY.current = 0;
+                calY.current = 0;
+                goTo("nom");
+              }}
             >
               <View style={styles.storeBody}>
                 <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{name}</Text>
@@ -258,19 +329,19 @@ export default function DateTimeScreen() {
 
         {/* ご指名の有無。店舗の次に決めていただく（Web予約と同じ流れ） */}
         {!!shop && isNomShop && nom && (
-          <>
+          <View onLayout={onBlockLayout("nom")}>
             <Text style={styles.sectionLabel}>スタッフのご指名</Text>
             <View style={styles.nomChoice}>
               <TouchableOpacity
                 style={[styles.nomCard, nomMode === "no" && styles.nomCardOn]}
-                onPress={() => chooseNomMode("no")}
+                onPress={() => { chooseNomMode("no"); goTo("cal"); }}
               >
                 <Text style={[styles.nomCardTitle, nomMode === "no" && styles.nomCardTitleOn]}>指名しない</Text>
                 <Text style={styles.nomCardDesc}>空いているお時間からお選びいただけます。</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.nomCard, nomMode === "yes" && styles.nomCardOn]}
-                onPress={() => chooseNomMode("yes")}
+                onPress={() => { chooseNomMode("yes"); goTo("nom"); }}
               >
                 <Text style={[styles.nomCardTitle, nomMode === "yes" && styles.nomCardTitleOn]}>スタッフを指名する</Text>
                 <Text style={styles.nomCardDesc}>指名料 ＋{yen(nom.fee)}／{nom.slotTime}〜の枠</Text>
@@ -287,7 +358,7 @@ export default function DateTimeScreen() {
                       <TouchableOpacity
                         key={st.id}
                         style={[styles.staffCard, active && styles.staffCardOn]}
-                        onPress={() => setNominatedStaffId(st.id)}
+                        onPress={() => { setNominatedStaffId(st.id); goTo("cal"); }}
                       >
                         <Image source={staffPhoto(st.id)} style={styles.staffPhoto} />
                         <Text style={styles.staffName} numberOfLines={1}>{st.name}</Text>
@@ -303,13 +374,13 @@ export default function DateTimeScreen() {
                 </View>
               </>
             )}
-          </>
+          </View>
         )}
 
         {/* 日時は、ご指名の有無が決まってから出す
             （ご指名の場合はスタッフが決まるまで出勤日が分からないため） */}
         {(nomMode === "no" || (nomMode === "yes" && !!nominatedStaffId)) && (
-        <>
+        <View onLayout={onBlockLayout("cal")}>
         {nomMode === "no" && (
           <TouchableOpacity style={styles.skipRow} onPress={handleToggleSkip}>
             <View style={[styles.checkbox, skipDateTime && styles.checkboxOn]}>
@@ -493,7 +564,7 @@ export default function DateTimeScreen() {
             ) : null}
           </>
         )}
-        </>
+        </View>
         )}
       </ScrollView>
 

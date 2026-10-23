@@ -15,11 +15,13 @@ import type { ImageSourcePropType } from "react-native";
 
 const PLACEHOLDER = require("@/assets/staff/placeholder.jpg");
 
-// nomination-data.js の staff[].id と対応（仮枠3名分。実写真に差し替える）
+/* nomination-data.js の staff[].id と対応（各店の店長）。
+   写真をいただいた方からここに足す。未登録はプレースホルダーのまま。 */
 const STAFF_PHOTOS: Record<string, ImageSourcePropType> = {
-  staff1: require("@/assets/staff/staff1.jpg"),
-  staff2: require("@/assets/staff/staff2.jpg"),
-  staff3: require("@/assets/staff/staff3.jpg"),
+  matsuzawa: require("@/assets/staff/matsuzawa.jpg"),   // 六本木ヒルズ店
+  // sato:       銀座店（写真待ち）
+  // nishikawa:  東戸塚オーロラシティ店（写真待ち）
+  // ishikawa:   横浜ランドマークタワー店・そごう横浜店（写真待ち）
 };
 
 /** スタッフidに対応する顔写真を返す。未登録ならプレースホルダー。 */

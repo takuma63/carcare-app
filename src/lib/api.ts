@@ -329,6 +329,8 @@ export interface NominationStaff {
   name: string;
   role?: string;
   photo?: string;
+  /** その方が立つ店舗。指名制度は各店の店長のみで運用する（2026-10-23） */
+  shops?: string[];
 }
 export interface Nomination {
   enabled: boolean;
@@ -480,8 +482,9 @@ export interface StaffShiftsResult {
   slot_time?: string;
   shifts?: Record<string, Record<string, boolean>>;
 }
-export async function fetchStaffShifts(from: string, days: number): Promise<StaffShiftsResult> {
-  const url = `${API_BASE}/nomination-staff?from=${encodeURIComponent(from)}&days=${days}`;
+export async function fetchStaffShifts(from: string, days: number, shop?: string): Promise<StaffShiftsResult> {
+  const url = `${API_BASE}/nomination-staff?from=${encodeURIComponent(from)}&days=${days}`
+    + (shop ? `&shop=${encodeURIComponent(shop)}` : "");
   let res: Response;
   try {
     res = await fetch(url, { method: "GET" });

@@ -6,6 +6,9 @@
    ★ 地図はAPIキーの要らない output=embed をWebViewで表示する。
      react-native-maps を使うとiOSではAppleマップになってしまうため、
      Web予約・公式サイトと見え方を揃える意味でもこちらを採る。
+   ★ 埋め込みURLをWebViewで直接開いてはいけない（2026-10-23 実機で発覚）。
+     Google側が「The Google Maps Embed API must be used in an iframe.」と
+     返して地図が出ない。iframeを1枚だけ置いたHTMLを読ませる。
    ★ PCでの確認用（npx expo start --web）は ShopMap.web.tsx が使われる。
    ★ 店舗はどこも商業施設の駐車場内にある。地図だけでは入口が分からないので
      access（階・棟）を店舗カード側に出している（二重に出さない）。
@@ -17,6 +20,19 @@ import { WebView } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { findShop, shopMapEmbedUrl, shopMapLinkUrl } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
+
+/* 埋め込み地図を入れるだけのHTML。iframeの中でないとGoogleが描画しない。 */
+function mapHtml(src: string): string {
+  return `<!doctype html><html><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<style>html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#f5f5f5}
+iframe{display:block;border:0;width:100%;height:100%}</style>
+</head><body>
+<iframe src="${src}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+  allowfullscreen></iframe>
+</body></html>`;
+}
 
 export function ShopMap({ shopName }: { shopName: string | null }) {
   const shop = findShop(shopName);
@@ -31,7 +47,7 @@ export function ShopMap({ shopName }: { shopName: string | null }) {
     <View style={styles.box}>
       <View style={styles.map}>
         <WebView
-          source={{ uri: shopMapEmbedUrl(shop.name) }}
+          source={{ html: mapHtml(shopMapEmbedUrl(shop.name)), baseUrl: "https://www.google.com" }}
           style={styles.webview}
           scrollEnabled={false}
           originWhitelist={["https://*"]}
