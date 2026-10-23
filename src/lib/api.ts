@@ -449,6 +449,21 @@ export function fetchAvailability(shop: string, startDate: string, days: number)
   });
 }
 
+/* 複数の店舗をまとめて取る（近隣店の空き案内に使う）。
+   店舗ごとに呼ぶと関数の起動が店舗数ぶん増えて遅いので、1回で済ませる。
+   results の並びは渡した shops と同じ順。 */
+export interface AvailabilityManyResult {
+  ok: true;
+  times: string[];
+  results: { shop: string; days: AvailabilityDay[] }[];
+}
+export function fetchAvailabilityMany(shops: string[], startDate: string, days: number) {
+  return request<AvailabilityManyResult>("availability", {
+    body: { shops, start_date: startDate, days },
+    auth: false,
+  });
+}
+
 export function fetchSlots(shop: string, date: string) {
   return request<SlotsResult>("slots", { body: { shop, date }, auth: false });
 }

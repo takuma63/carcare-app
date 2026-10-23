@@ -16,6 +16,11 @@ export type Shop = {
   tel: string;
   access: string;
   mapQuery: string;   // Googleマップで引く検索語（店舗の登録名）
+  /* 「他店の空き案内」で使うエリア区分。横浜と東京は40〜60分離れているため、
+     案内は同じエリア内に限る。areaFar は同じエリアでも少し遠い店。
+     ★ Web予約の shop-data.js と同じ値にすること（片方だけ変えない）。 */
+  area: "yokohama" | "tokyo";
+  areaFar?: boolean;
 };
 
 export const SHOPS: Shop[] = [
@@ -26,6 +31,7 @@ export const SHOPS: Shop[] = [
     tel: "045-225-0118",
     access: "ランドマークタワーの駐車場B1F。タワー駐車場入口から入って地下1階",
     mapQuery: "カーケアセンター 横浜ランドマークタワー店",
+    area: "yokohama",
   },
   {
     name: "そごう横浜店",
@@ -34,6 +40,7 @@ export const SHOPS: Shop[] = [
     tel: "045-465-5599",
     access: "そごうパーキング館3F。横浜駅東口のそごう専用駐車場",
     mapQuery: "カーケアセンター そごう横浜店",
+    area: "yokohama",
   },
   {
     name: "東戸塚オーロラシティ店",
@@ -42,6 +49,8 @@ export const SHOPS: Shop[] = [
     tel: "045-820-2855",
     access: "西武館オーロラモールのP2駐車場",
     mapQuery: "カーケアセンター 東戸塚オーロラシティ店",
+    area: "yokohama",
+    areaFar: true,
   },
   {
     name: "六本木ヒルズ店",
@@ -50,6 +59,7 @@ export const SHOPS: Shop[] = [
     tel: "03-5772-0055",
     access: "六本木ヒルズP2駐車場の地下3階",
     mapQuery: "カーケアセンター 六本木ヒルズ店",
+    area: "tokyo",
   },
   {
     name: "銀座店",
@@ -58,6 +68,7 @@ export const SHOPS: Shop[] = [
     tel: "03-3571-3581",
     access: "西銀座駐車場の地下2F。外堀通り沿いの入口から",
     mapQuery: "カーケアセンター 銀座店",
+    area: "tokyo",
   },
 ];
 
@@ -70,6 +81,16 @@ export function findShop(name: string | null | undefined): Shop | null {
 
 /* 画面に埋め込む地図のURL。APIキーの要らない output=embed 形式。
    公式サイトの店舗ページと同じ方式に揃えてある。 */
+/* 同じエリアの他店（＝案内してよい近隣店）。遠い店は後ろに回す。
+   Web予約の neighborShops と同じ考え方。 */
+export function neighborShops(shopName: string | null | undefined): Shop[] {
+  const base = findShop(shopName);
+  if (!base) return [];
+  return SHOPS
+    .filter((x) => x.area === base.area && x.name !== base.name)
+    .sort((a, b) => (a.areaFar ? 1 : 0) - (b.areaFar ? 1 : 0));
+}
+
 export function shopMapEmbedUrl(name: string): string {
   const s = findShop(name);
   return s ? `https://maps.google.com/maps?q=${encodeURIComponent(s.mapQuery)}&z=16&output=embed` : "";

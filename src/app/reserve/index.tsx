@@ -28,10 +28,10 @@ import { StepIndicator } from "@/components/StepIndicator";
 import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
-import { fetchAvailability, fetchStaffShifts, type AvailabilityDay, type SlotState } from "@/lib/api";
+import { fetchAvailabilityMany, fetchStaffShifts, type AvailabilityDay, type SlotState } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
 import { ShopMap } from "@/components/ShopMap";
-import { SHOP_NAMES, findShop } from "@/lib/shops";
+import { SHOP_NAMES, findShop, neighborShops } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
 const STORE_NAMES = SHOP_NAMES;   // 大元は src/lib/shops.ts
@@ -82,6 +82,9 @@ export default function DateTimeScreen() {
   const [days, setDays] = useState<AvailabilityDay[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
+  /* 近隣店の空き（同じエリアの店だけ）。Web予約と同じご案内 */
+  const [nearby, setNearby] = useState<{ shop: string; days: AvailabilityDay[]; far: boolean }[]>([]);
+  const [nearbyOpen, setNearbyOpen] = useState(false);
 
   // 通常枠は全店 10:00〜18:00。ご指名は 18:00 の枠のみ
   // （nom.shop が null なら全店舗、店舗名なら当該店のみ）
@@ -150,20 +153,53 @@ export default function DateTimeScreen() {
     let cancelled = false;
     setLoadingSlots(true);
     setSlotError(null);
-    fetchAvailability(shop, toDateKey(weekStart), WEEK_DAYS)
+    /* 自店と同じエリアの近隣店を1回のリクエストでまとめて取る
+       （店舗ごとに呼ぶと関数の起動が増えて遅い。Webと同じ作り） */
+    const neighbors = neighborShops(shop);
+    fetchAvailabilityMany([shop, ...neighbors.map((n) => n.name)], toDateKey(weekStart), WEEK_DAYS)
       .then((res) => {
         if (cancelled) return;
         setTimes(res.times ?? []);
-        setDays(res.days ?? []);
+        const results = res.results ?? [];
+        setDays(results[0]?.days ?? []);
+        setNearby(
+          results.slice(1).map((r, i) => ({
+            shop: r.shop,
+            days: r.days ?? [],
+            far: !!neighbors[i]?.areaFar,
+          }))
+        );
       })
       .catch(() => {
         if (cancelled) return;
         setDays([]);
+        setNearby([]);
         setSlotError("空き状況を取得できませんでした。通信をご確認ください。");
       })
       .finally(() => { if (!cancelled) setLoadingSlots(false); });
     return () => { cancelled = true; };
   }, [shop, weekStart, skipDateTime]);
+
+  /* その一週間の「○」の数と、いちばん早い空き枠 */
+  const summarize = (list: AvailabilityDay[]) => {
+    let open = 0;
+    let first: { date: string; time: string; weekday: number } | null = null;
+    for (const d of list) {
+      for (const t of Object.keys(d.slots)) {
+        if (d.slots[t] !== "open") continue;
+        open++;
+        if (!first) first = { date: d.date, time: t, weekday: d.weekday };
+      }
+    }
+    return { open, first };
+  };
+
+  const mine = summarize(days);
+  const nearbyRows = nearby
+    .map((n) => ({ ...n, sum: summarize(n.days) }))
+    .filter((n) => n.sum.open > 0);
+  /* 希望の店舗がこの一週間まったく空いていないときは、最初から開いて見せる */
+  const nearbyAutoOpen = days.length > 0 && mine.open === 0;
 
   /* 店舗を変えたら今週に戻す（別の店の週を見たまま混乱しないように） */
   useEffect(() => { setWeekStart(startOfToday()); }, [shop]);
@@ -396,6 +432,58 @@ export default function DateTimeScreen() {
               ) : null}
             </View>
 
+            {/* 近隣店の空き案内。同じエリアの店だけ（横浜と東京は40〜60分離れている）。
+                ご指名のときは出さない。店を移るとスタッフも変わってしまうため。
+                Web予約（reserve-step1.js の renderNearby）と同じ考え方。 */}
+            {nomMode !== "yes" && nearbyRows.length > 0 ? (
+              <View style={styles.nearby}>
+                <TouchableOpacity
+                  style={styles.nearbyHead}
+                  onPress={() => setNearbyOpen((v) => !v)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.nearbyHeadText}>
+                    {mine.open === 0
+                      ? `この一週間、${shop}は空きがありません。近くの店舗をご案内します`
+                      : "近くの店舗の空き状況を見る"}
+                  </Text>
+                  <Feather
+                    name={(nearbyOpen || nearbyAutoOpen) ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={colors.textLight}
+                  />
+                </TouchableOpacity>
+
+                {(nearbyOpen || nearbyAutoOpen) && (
+                  <View style={styles.nearbyBody}>
+                    {nearbyRows.map((n) => (
+                      <TouchableOpacity
+                        key={n.shop}
+                        style={styles.nearbyShop}
+                        onPress={() => setShop(n.shop)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.nearbyMain}>
+                          <Text style={styles.nearbyName}>{n.shop}</Text>
+                          {n.far ? <Text style={styles.nearbyFar}>横浜駅周辺から20〜30分</Text> : null}
+                          <Text style={styles.nearbySub}>
+                            この一週間の空き {n.sum.open} 枠
+                            {n.sum.first
+                              ? `　最短 ${Number(n.sum.first.date.slice(5, 7))}/${Number(n.sum.first.date.slice(8, 10))}（${WEEKDAY[n.sum.first.weekday]}）${n.sum.first.time}〜`
+                              : ""}
+                          </Text>
+                        </View>
+                        <Feather name="chevron-right" size={18} color={colors.gold} />
+                      </TouchableOpacity>
+                    ))}
+                    <Text style={styles.nearbyNote}>
+                      料金は店舗により異なる場合があります。お取り扱いのないメニューもございますので、次の画面でご確認ください。
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : null}
+
             {preferredDate && preferredTime ? (
               <View style={styles.picked}>
                 <Feather name="check-circle" size={16} color={colors.gold} />
@@ -536,6 +624,50 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   pickedText: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
+
+  /* ---- 近隣店の空き案内 ---- */
+  nearby: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    backgroundColor: colors.white,
+  },
+  nearbyHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  nearbyHeadText: {
+    flex: 1,
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.caption,
+    lineHeight: 19,
+    color: colors.text,
+  },
+  nearbyBody: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  nearbyShop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius,
+    backgroundColor: colors.bgSub,
+  },
+  nearbyMain: { flex: 1, gap: 2 },
+  nearbyName: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text },
+  nearbyFar: { fontFamily: fonts.sans, fontSize: 11, color: colors.textLight },
+  nearbySub: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+  nearbyNote: { fontFamily: fonts.sans, fontSize: 11, lineHeight: 17, color: colors.textLight },
 
   content: { padding: spacing.lg, paddingTop: spacing.xs, paddingBottom: spacing.xxl, gap: spacing.md },
   heading: {
