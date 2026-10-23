@@ -18,6 +18,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "ログイン情報を安全に保管するために使用します。"
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "android": {
@@ -67,6 +70,10 @@
       "ENTRA_SUBDOMAIN": "carcarecenterapp",
       "ENTRA_CLIENT_ID": "71a3bc23-04fc-40fa-b09d-816c77ce4a68",
       "ASK_URL": "https://carcare-ask-jp.azurewebsites.net/api/ask"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/5d48e86a-3297-4f91-8b9f-d1efb63db308"
     }
   }
 }

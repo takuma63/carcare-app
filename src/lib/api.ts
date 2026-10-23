@@ -141,6 +141,8 @@ export interface LoginParams {
   name_kana?: string;
   phone?: string;
   birth_month?: number | null;
+  /** 領収書のご宛名（会社名）。法人でご利用のお客様のみ */
+  company_name?: string;
 }
 export interface LoginResult {
   ok: true;

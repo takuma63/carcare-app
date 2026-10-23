@@ -392,7 +392,8 @@ const styles = StyleSheet.create({
   },
   greetName: {
     fontFamily: fonts.serifJp,
-    fontSize: fontSize.bodyLarge,
+    fontSize: fontSize.h3,
+    lineHeight: 30,
     color: colors.text,
   },
   actions: {

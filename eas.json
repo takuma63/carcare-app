@@ -8,13 +8,15 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium"
-      }
+      },
+      "channel": "production"
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false
-      }
+      },
+      "channel": "preview"
     }
   },
   "submit": {

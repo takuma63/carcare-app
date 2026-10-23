@@ -2,8 +2,8 @@
    register.tsx  ―  新規登録
    ------------------------------------------------------------
    STEP 1／4  お名前（お名前・フリガナ）
-   STEP 2／4  ログインに使う情報（メールアドレス・パスワード）
-   STEP 3／4  お客様のこと（電話番号・誕生月／どちらも任意）
+   STEP 2／4  ログインに使う情報（メールアドレス・パスワード／確認用も）
+   STEP 3／4  お客様のこと（電話番号＝必須／誕生月・会社名＝任意）
    STEP 4／4  確認コード（Microsoft がメールに送る6桁）
    （＋）     ご本人の確認（電話番号が台帳と一致した方だけ）
 
@@ -21,6 +21,15 @@
      台帳の照合（lookupByPhone）は本人確認済みトークンを要求する
      （いたずら照会で顧客名簿を引かれないようにするため）。
      したがってコードの検証後にしか呼べない。
+
+   ★ パスワードの最低文字数は Microsoft 側で8文字に固定されている
+     （実際に試して確認：7文字以下は password_too_short で弾かれる）。
+     テナントの設定でも変えられないので、ここで短くしても意味がない。
+     打ち間違いを防ぐために確認用の入力を置いている。
+
+   ★ 電話番号は必須。ご来店の記録（お一人あたり平均4件）と結びつける鍵で、
+     ここが空だと回数券の残高も履歴も引き継げない。
+     ハイフンは入れていただかない（入力のたびに揺れるため、数字だけ受ける）。
 
    ★ パスワードは当社のサーバーを通らない
      Microsoft Entra External ID と直接やり取りし、
@@ -102,9 +111,11 @@ export default function RegisterScreen() {
   // ② ログインに使う情報
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // ③ お客様のこと（任意）
+  const [password2, setPassword2] = useState("");
+  // ③ お客様のこと（電話番号は必須）
   const [phone, setPhone] = useState("");
   const [birthMonth, setBirthMonth] = useState<number | null>(null);
+  const [companyName, setCompanyName] = useState("");
   // ④ 確認コード
   const [code, setCode] = useState("");
   const [codeLength, setCodeLength] = useState(CODE_LENGTH_FALLBACK);
@@ -201,12 +212,16 @@ export default function RegisterScreen() {
     if (!mail) return setError("メールアドレスを入力してください");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setError("メールアドレスの形式をご確認ください");
     if (password.length < 8) return setError("パスワードは8文字以上でご設定ください");
+    if (password !== password2) return setError("パスワードが一致しません。もう一度ご確認ください");
     go("info");
   };
 
   /* ---------- ③ お客様のこと → 確認コードの送信 ---------- */
   const sendCode = async () => {
     setError(null);
+    /* ご来店の記録と結びつける鍵なので、ここは必ずお伺いする */
+    if (phone.length < 10) return setError("電話番号を市外局番から入力してください");
+    if (phone.length > 11) return setError("電話番号の桁数をご確認ください");
     setBusy(true);
     try {
       const started = await entra.signUpStart(email.trim(), password);
@@ -221,12 +236,6 @@ export default function RegisterScreen() {
     } finally {
       setBusy(false);
     }
-  };
-
-  const skipInfo = () => {
-    setPhone("");
-    setBirthMonth(null);
-    sendCode();
   };
 
   /* ---------- ④ 確認コード → 本登録 ---------- */
@@ -271,6 +280,7 @@ export default function RegisterScreen() {
       name_kana: nameKana.trim() || undefined,
       phone: phoneToSend || undefined,
       birth_month: birthMonth,
+      company_name: companyName.trim() || undefined,
     });
     /* ★ signIn を呼ぶと Stack.Protected が即座に (tabs) へ切り替わるため、
        お礼の画面を見ていただく間だけ待ってから呼ぶ。 */
@@ -395,11 +405,26 @@ export default function RegisterScreen() {
                   />
                   <PasswordMeter password={password} reduce={reduceMotion} />
                 </Appear>
+                <Appear reduce={reduceMotion} index={3}>
+                  <Field
+                    label="パスワード（確認）"
+                    required
+                    value={password2}
+                    onChangeText={setPassword2}
+                    secureTextEntry
+                    autoComplete="new-password"
+                    autoCapitalize="none"
+                    placeholder="もう一度ご入力ください"
+                  />
+                  {password2.length > 0 && password !== password2 ? (
+                    <Text style={styles.fieldWarn}>パスワードが一致しません</Text>
+                  ) : null}
+                </Appear>
               </View>
 
               {error && <Text style={styles.error}>{error}</Text>}
 
-              <Appear reduce={reduceMotion} index={3}>
+              <Appear reduce={reduceMotion} index={4}>
                 <GoldButton title="次へ" onPress={submitLogin} style={styles.button} />
                 <TouchableOpacity onPress={() => go("name", -1)} style={styles.linkRow}>
                   <Text style={styles.link}>ひとつ前に戻る</Text>
@@ -414,7 +439,7 @@ export default function RegisterScreen() {
               <Appear reduce={reduceMotion} index={0}>
                 <Text style={styles.title}>お客様のこと</Text>
                 <Text style={styles.lead}>
-                  どちらも任意です。ご入力いただくと、より便利にお使いいただけます。
+                  ご来店の記録と結びつけるため、電話番号をお伺いしています。
                 </Text>
               </Appear>
 
@@ -422,21 +447,25 @@ export default function RegisterScreen() {
                 <Appear reduce={reduceMotion} index={1}>
                   <Field
                     label="電話番号"
+                    required
                     value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
+                    /* ハイフンは受けない。入れ方が人によって揺れるため、数字だけにする */
+                    onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, "").slice(0, 11))}
+                    keyboardType="number-pad"
                     autoComplete="tel"
-                    placeholder="例：090-1234-5678"
+                    placeholder="例：09012345678（ハイフンなし）"
                   />
                   <Text style={styles.fieldHint}>
-                    ご来店時にお伝えいただいている電話番号をご入力いただくと、これまでのご利用履歴と回数券の残高が引き継がれます。
+                    ご来店時にお伝えいただいている電話番号をご入力ください。これまでのご利用履歴と回数券の残高が引き継がれます。
                   </Text>
                 </Appear>
 
                 {/* 誕生月（任意）。誕生日クーポンの配布に使う。日付は伺わない。 */}
                 <Appear reduce={reduceMotion} index={2}>
                   <Text style={styles.monthLabel}>誕生月</Text>
-                  <Text style={styles.monthHint}>誕生月に使えるクーポンをお送りします。</Text>
+                  <Text style={styles.monthHint}>
+                    誕生月に使えるクーポンをお送りします。あとから変更はできません。
+                  </Text>
                   <View style={styles.monthRow}>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <TouchableOpacity
@@ -449,11 +478,25 @@ export default function RegisterScreen() {
                     ))}
                   </View>
                 </Appear>
+
+                {/* 領収書のご宛名。法人でご利用のお客様のため（2026-10-23 発注者の要望）。
+                    入れておくと、毎回ご宛名をお伺いしなくて済む。 */}
+                <Appear reduce={reduceMotion} index={3}>
+                  <Field
+                    label="会社名"
+                    value={companyName}
+                    onChangeText={setCompanyName}
+                    placeholder="例：株式会社カーケアセンター"
+                  />
+                  <Text style={styles.fieldHint}>
+                    領収書をご希望の方は、ご宛名にする会社名をご入力ください。
+                  </Text>
+                </Appear>
               </View>
 
               {error && <Text style={styles.error}>{error}</Text>}
 
-              <Appear reduce={reduceMotion} index={3}>
+              <Appear reduce={reduceMotion} index={4}>
                 <Text style={styles.consent}>
                   「確認コードを受け取る」を押すと、
                   <Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
@@ -462,10 +505,7 @@ export default function RegisterScreen() {
                   に同意いただいたものとします。
                 </Text>
                 <GoldButton title="確認コードを受け取る" onPress={sendCode} loading={busy} style={styles.button} />
-                <TouchableOpacity onPress={skipInfo} style={styles.linkRow} disabled={busy}>
-                  <Text style={styles.link}>入力せずに進む</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => go("login", -1)} style={styles.linkRowTight} disabled={busy}>
+                <TouchableOpacity onPress={() => go("login", -1)} style={styles.linkRow} disabled={busy}>
                   <Text style={styles.link}>ひとつ前に戻る</Text>
                 </TouchableOpacity>
               </Appear>
@@ -860,6 +900,13 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: colors.textLight,
+    marginTop: spacing.xs,
+  },
+  fieldWarn: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.danger,
     marginTop: spacing.xs,
   },
   required: {
