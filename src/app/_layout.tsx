@@ -111,6 +111,7 @@ function RootNavigator() {
           <Stack.Screen name="prepaid" />
           <Stack.Screen name="vehicles" />
           <Stack.Screen name="bookings" />
+          <Stack.Screen name="announcements" />
         </Stack.Protected>
         <Stack.Protected guard={!token}>
           <Stack.Screen name="(onboarding)" />
