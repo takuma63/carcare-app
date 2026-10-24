@@ -18,6 +18,9 @@ const fs = require("fs");
 
 const SRC = "/Users/takuma/projects/carcare-app/app/src/assets/logo.png";
 const MARK = { x: 266, y: 8, w: 248, h: 246 };
+/* 「CARCARECENTER」の文字。罫線と「Membership Car Wash Lounge」は
+   アイコンの大きさでは読めないので入れない（2026-10-24 発注者の要望で文字入りに）。 */
+const WORD = { x: 66, y: 284, w: 650, h: 40 };
 const INK = [0x1a, 0x1a, 0x1a];          // theme.ts の colors.text
 const UP = 8;                            // 輪郭を取るときの拡大率
 const EPS = 1.1;                         // 直線近似の許容ずれ（元画素）
@@ -140,6 +143,45 @@ console.log("輪郭の点:", contour.length, "→ 直線近似後の頂点:", po
 /* 元画像の座標系（中心を原点）に直す */
 const P = poly.map(([x, y]) => [ (x + 0.5) / UP - CX, (y + 0.5) / UP - CY ]);
 
+/* 文字の部分を、拡大→ぼかし→二値化で取り出す（縁のガタつきを均す）。
+   マークと違って回転対称が使えないので、こちらは素直に均すだけ。 */
+function wordMask(outW, outH) {
+  const SS = 3;
+  const W = outW * SS, H = outH * SS;
+  const a = new Float64Array(W * H);
+  const at = (x, y) => {
+    if (x < 0 || y < 0 || x > src.width - 1 || y > src.height - 1) return 0;
+    const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const g = (px, py) => (px < 0 || py < 0 || px >= src.width || py >= src.height)
+      ? 0 : src.data[(py * src.width + px) * 4 + 3] / 255;
+    return g(x0,y0)*(1-fx)*(1-fy) + g(x0+1,y0)*fx*(1-fy) + g(x0,y0+1)*(1-fx)*fy + g(x0+1,y0+1)*fx*fy;
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    a[y * W + x] = at(WORD.x + (x + 0.5) * WORD.w / W, WORD.y + (y + 0.5) * WORD.h / H);
+  }
+  const r = Math.max(1, Math.round(0.55 * SS));
+  const t = new Float64Array(W * H);
+  const blur = (inp, outp, horiz) => {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let s2 = 0, c = 0;
+      for (let k = -r; k <= r; k++) {
+        const xx = horiz ? x + k : x, yy = horiz ? y : y + k;
+        if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+        s2 += inp[yy * W + xx]; c++;
+      }
+      outp[y * W + x] = s2 / c;
+    }
+  };
+  blur(a, t, true); blur(t, a, false);
+  const out = new Float64Array(outW * outH);
+  for (let y = 0; y < outH; y++) for (let x = 0; x < outW; x++) {
+    let s2 = 0;
+    for (let j = 0; j < SS; j++) for (let k = 0; k < SS; k++) s2 += a[(y*SS+j)*W + (x*SS+k)] >= 0.5 ? 1 : 0;
+    out[y * outW + x] = s2 / (SS * SS);
+  }
+  return out;
+}
+
 /* ④ 多角形として45°ずつ8枚描く */
 function pointIn(poly, x, y) {
   let c = false;
@@ -150,7 +192,7 @@ function pointIn(poly, x, y) {
   return c;
 }
 const SS = 4;   // 1画素あたり4x4で判定して、なめらかな縁にする
-function make(file, { canvas = 1024, markRatio, bg, ink = INK }) {
+function make(file, { canvas = 1024, markRatio, bg, ink = INK, wordRatio = 0, gapRatio = 0.05 }) {
   const markPx = canvas * markRatio;
   const scale = markPx / MARK.w;
   const png = new PNG({ width: canvas, height: canvas });
@@ -158,11 +200,28 @@ function make(file, { canvas = 1024, markRatio, bg, ink = INK }) {
     png.data[i*4] = bg ? bg[0] : 0; png.data[i*4+1] = bg ? bg[1] : 0;
     png.data[i*4+2] = bg ? bg[2] : 0; png.data[i*4+3] = bg ? 255 : 0;
   }
+
+  /* 文字を入れるときは、マークと文字を合わせた塊を中央に置く。
+     マークだけのときは今までどおり画面の中心に描く。 */
+  let markShiftY = 0;
+  let wordTop = 0, wordW = 0, wordH = 0;
+  if (wordRatio > 0) {
+    wordW = Math.round(canvas * wordRatio);
+    wordH = Math.round(wordW * WORD.h / WORD.w);
+    const gap = Math.round(canvas * gapRatio);
+    const markH = markPx * MARK.h / MARK.w;
+    const total = markH + gap + wordH;
+    const top = (canvas - total) / 2;
+    markShiftY = top + markH / 2 - canvas / 2;   // マークの中心をどれだけ上げるか
+    wordTop = Math.round(top + markH + gap);
+  }
+
   if (markRatio > 0) {
     const polys = [];
     for (let i = 0; i < 8; i++) {
       const t = i * Math.PI / 4, cs = Math.cos(t), sn = Math.sin(t);
-      polys.push(P.map(([x, y]) => [ (x * cs - y * sn) * scale + canvas / 2, (x * sn + y * cs) * scale + canvas / 2 ]));
+      polys.push(P.map(([x, y]) => [ (x * cs - y * sn) * scale + canvas / 2,
+                                     (x * sn + y * cs) * scale + canvas / 2 + markShiftY ]));
     }
     // 描く範囲だけ回す
     let x0 = canvas, y0 = canvas, x1 = 0, y1 = 0;
@@ -183,13 +242,28 @@ function make(file, { canvas = 1024, markRatio, bg, ink = INK }) {
       png.data[i+3] = bg ? 255 : Math.round(a * 255);
     }
   }
+  if (wordRatio > 0) {
+    const wm = wordMask(wordW, wordH);
+    const ox = Math.round((canvas - wordW) / 2);
+    for (let y = 0; y < wordH; y++) for (let x = 0; x < wordW; x++) {
+      const al = wm[y * wordW + x];
+      if (al <= 0.004) continue;
+      const i = ((y + wordTop) * canvas + (x + ox)) * 4;
+      for (let c = 0; c < 3; c++) png.data[i + c] = Math.round(ink[c] * al + png.data[i + c] * (1 - al));
+      png.data[i + 3] = bg ? 255 : Math.round(al * 255);
+    }
+  }
+
   fs.writeFileSync(file, PNG.sync.write(png, bg ? { colorType: 2, inputHasAlpha: true } : {}));
-  console.log("書き出し:", file.split("/").pop(), canvas + "px", "マーク" + Math.round(markRatio * 100) + "%");
+  console.log("書き出し:", file.split("/").pop(), canvas + "px",
+    "マーク" + Math.round(markRatio * 100) + "%" + (wordRatio ? " ＋文字" + Math.round(wordRatio * 100) + "%" : ""));
 }
 
 const D = process.env.OUTDIR || "/Users/takuma/projects/carcare-app/app/assets/";
 const WHITE = [255, 255, 255];
-make(D + "icon.png", { markRatio: 0.56, bg: WHITE });
+/* ★ iOS・汎用。発注者の要望で文字入り（2026-10-24）。
+   Androidのアダプティブと通知は外周が削られるので、文字は入れない。 */
+make(D + "icon.png", { markRatio: 0.40, wordRatio: 0.80, bg: WHITE });
 make(D + "favicon.png", { canvas: 196, markRatio: 0.66, bg: WHITE });
 make(D + "android-icon-foreground.png", { markRatio: 0.42 });
 make(D + "android-icon-background.png", { markRatio: 0, bg: WHITE });
