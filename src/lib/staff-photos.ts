@@ -19,9 +19,9 @@ const PLACEHOLDER = require("@/assets/staff/placeholder.jpg");
    写真をいただいた方からここに足す。未登録はプレースホルダーのまま。 */
 const STAFF_PHOTOS: Record<string, ImageSourcePropType> = {
   matsuzawa: require("@/assets/staff/matsuzawa.jpg"),   // 六本木ヒルズ店
-  // sato:       銀座店（写真待ち）
-  // nishikawa:  東戸塚オーロラシティ店（写真待ち）
-  // ishikawa:   横浜ランドマークタワー店・そごう横浜店（写真待ち）
+  nishikawa: require("@/assets/staff/nishikawa.jpg"),   // 東戸塚オーロラシティ店
+  ishikawa: require("@/assets/staff/ishikawa.jpg"),     // 横浜ランドマークタワー店・そごう横浜店
+  // sato:    銀座店（写真待ち。いただいたら上と同じ形で足す）
 };
 
 /** スタッフidに対応する顔写真を返す。未登録ならプレースホルダー。 */
