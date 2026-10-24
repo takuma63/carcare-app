@@ -6,6 +6,15 @@
    ★ 画面の言葉は「車両」で統一する（2026-10-22 発注者の指示）。
      「お車の登録」「今おもちのお車」は日本語として据わりが悪かった。
 
+   ★ お客様にお伺いするのはメーカー・車種・ボディカラーの3つだけ
+     （2026-10-24 発注者と相談のうえ決定）。
+     ナンバーは分類番号やひらがなを正しく打てる方が多くなく、
+     間違って入ると店舗側が直す手間が増える。ご来店時に実車を見て
+     店舗が入れるほうが確実なので、管理画面の顧客詳細から入れる。
+     ボディカラーは残す。同じ車種を複数お持ちの方が、アプリ上で
+     見分けられなくなるため。
+     ★ 店舗が入れたナンバーは、この画面にも表示する（消さない）。
+
    ★ 履歴から選ぶ形にしている理由
      店舗の記録には、そのお客様が過去に持ち込まれた車が全部入っている。
      乗り換えた方が多く、法人では200台を超える例もあるため、
@@ -57,23 +66,14 @@ export default function VehiclesScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /* 追加するときの入力。
-     ★ ナンバーは入れていただかなくても追加できる。
-       ただし画面に「任意」とは書かない（書くと誰も入れなくなるため。
-       2026-10-22 発注者の指示）。ナンバーは陸運局の表記どおり
-       4つに分かれているので、入力欄も4つに分ける。 */
+  /* 追加するときの入力。メーカー・車種・ボディカラーの3つだけ。 */
   const [adding, setAdding] = useState(false);
   const [maker, setMaker] = useState("");
   const [model, setModel] = useState("");
   const [color, setColor] = useState("");
-  const [plateArea, setPlateArea] = useState("");
-  const [plateClass, setPlateClass] = useState("");
-  const [plateHiragana, setPlateHiragana] = useState("");
-  const [plateNumber, setPlateNumber] = useState("");
 
   const clearForm = () => {
     setMaker(""); setModel(""); setColor("");
-    setPlateArea(""); setPlateClass(""); setPlateHiragana(""); setPlateNumber("");
   };
 
   const apply = (res: { selected: Vehicle[]; history: Vehicle[] }) => {
@@ -129,10 +129,6 @@ export default function VehiclesScreen() {
         maker: maker.trim(),
         model: model.trim(),
         color: color.trim(),
-        plate_area: plateArea.trim(),
-        plate_class: plateClass.trim(),
-        plate_hiragana: plateHiragana.trim(),
-        plate_number: plateNumber.trim(),
       })
     );
     clearForm();
@@ -208,44 +204,9 @@ export default function VehiclesScreen() {
                   placeholder="例：パールホワイト"
                   placeholderTextColor={colors.textLight}
                 />
-
-                {/* ナンバー。ナンバープレートと同じ並びにして、
-                    どこに何を入れるか見ただけで分かるようにする。 */}
-                <Text style={styles.fieldLabel}>ナンバー</Text>
-                <View style={styles.plateRow}>
-                  <TextInput
-                    style={[styles.input, styles.plateInput, styles.plateArea]}
-                    value={plateArea}
-                    onChangeText={setPlateArea}
-                    placeholder="品川"
-                    placeholderTextColor={colors.textLight}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.plateInput, styles.plateClass]}
-                    value={plateClass}
-                    onChangeText={setPlateClass}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                    placeholder="300"
-                    placeholderTextColor={colors.textLight}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.plateInput, styles.plateKana]}
-                    value={plateHiragana}
-                    onChangeText={setPlateHiragana}
-                    maxLength={1}
-                    placeholder="さ"
-                    placeholderTextColor={colors.textLight}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.plateInput, styles.plateNumber]}
-                    value={plateNumber}
-                    onChangeText={setPlateNumber}
-                    maxLength={7}
-                    placeholder="12-34"
-                    placeholderTextColor={colors.textLight}
-                  />
-                </View>
+                <Text style={styles.formNote}>
+                  ナンバーはご来店時に店舗で確認いたしますので、ご入力は不要です。
+                </Text>
 
                 <GoldButton title="追加する" onPress={onAdd} loading={busy} style={styles.addButton} />
                 <TouchableOpacity onPress={() => { clearForm(); setAdding(false); }} style={styles.linkRow}>
@@ -364,20 +325,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   /* ナンバーの4枠。地名・分類番号・ひらがな・一連番号の並びに合わせる */
-  plateRow: {
-    flexDirection: "row",
-    gap: 6,
+  formNote: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textLight,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
   },
-  plateInput: {
-    flexBasis: 0,
-    minWidth: 0,
-    textAlign: "center",
-    paddingHorizontal: 4,
-  },
-  plateArea: { flex: 2.3 },
-  plateClass: { flex: 1.8 },
-  plateKana: { flex: 1.2 },
-  plateNumber: { flex: 2.6 },
   addButton: { marginTop: spacing.xs },
   linkRow: { marginTop: spacing.md, alignItems: "center" },
   link: {
