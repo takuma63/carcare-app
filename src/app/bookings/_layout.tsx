@@ -12,6 +12,7 @@
 import { Stack, useRouter } from "expo-router";
 import { TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { StyleSheet } from "react-native";
 import { colors, fonts } from "@/theme";
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
@@ -25,9 +26,18 @@ export default function BookingsLayout() {
     else router.replace("/(tabs)");
   };
 
+  /* ★ 両方の画面に置く。詳細は通知から直接開かれることがあり、
+     そのときは端末標準の戻るが出ないため（一覧を経由していないので）。
+     位置は端末標準の矢印に合わせて寄せてある
+     （2026-10-24「左にずれている」との指摘）。 */
   const backButton = () => (
-    <TouchableOpacity onPress={goBack} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
-      <Feather name="arrow-left" size={22} color={colors.text} />
+    <TouchableOpacity
+      onPress={goBack}
+      hitSlop={HIT_SLOP}
+      style={styles.back}
+      accessibilityLabel="前の画面に戻る"
+    >
+      <Feather name="chevron-left" size={26} color={colors.text} />
     </TouchableOpacity>
   );
 
@@ -46,3 +56,13 @@ export default function BookingsLayout() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  /* 端末標準の戻る矢印と同じくらいの位置に寄せる。
+     素のまま置くと左端に貼り付いて、見出しとの釣り合いが悪い。 */
+  back: {
+    paddingLeft: 6,
+    paddingRight: 10,
+    paddingVertical: 4,
+  },
+});
