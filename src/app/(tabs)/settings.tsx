@@ -19,7 +19,7 @@ const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { customer, signOut } = useAuth();
+  const { customer, signOut, forgetAccount } = useAuth();
   const [deleting, setDeleting] = useState(false);
 
   const handleSignOut = () => {
@@ -59,7 +59,7 @@ export default function SettingsScreen() {
     setDeleting(true);
     try {
       await deleteMyAccount();
-      await signOut();
+      await forgetAccount();
       Alert.alert("削除しました", "ご利用ありがとうございました。");
     } catch (e) {
       Alert.alert(

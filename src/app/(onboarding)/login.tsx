@@ -100,7 +100,10 @@ export default function LoginScreen() {
         <TouchableOpacity onPress={() => router.push("/(onboarding)/reset")} style={styles.linkRow}>
           <Text style={styles.link}>パスワードをお忘れの方</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()} style={styles.linkRow}>
+        <TouchableOpacity
+          onPress={() => router.replace({ pathname: "/(onboarding)/register", params: { fresh: "1" } })}
+          style={styles.linkRow}
+        >
           <Text style={styles.link}>はじめてご利用の方はこちら</Text>
         </TouchableOpacity>
       </ScrollView>

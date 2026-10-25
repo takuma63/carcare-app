@@ -64,6 +64,16 @@ export default function MenuSelectScreen() {
     groups.some((g) => ids.includes(g.id) && g.items.some((it) => !!selections[it.id]));
   const selectionCount = Object.keys(selections).length;
 
+  /* ★ オプションだけでは予約を受けない（2026-10-25 発注者の指摘）。
+     コーティングのページは本体が電話受付のみなので、下に並ぶオプション
+     （レザーコーティング・ルームクリーニング等）だけを選んで進める状態だった。
+     それでは「コーティングを予約したつもり」との食い違いが起きる。
+     本体のメニュー（手洗い洗車）をひとつ選んでいただいてから進む。 */
+  const mainSelected = groups.some(
+    (g) => MAIN_GROUP_IDS.includes(g.id) && g.items.some((it) => !!selections[it.id])
+  );
+  const optionOnly = selectionCount > 0 && !mainSelected;
+
   const toggleOpen = (groupId: string) => {
     animateNext();
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -220,6 +230,11 @@ export default function MenuSelectScreen() {
           <View style={styles.accBody}>
             {group.note && <Text style={styles.groupNote}>{group.note}</Text>}
             {group.phoneOnly && renderPhoneNotice()}
+            {/* オプションは洗車メニューに追加していただくもの。
+                単体で予約を受けていると誤解されないよう、ここで伝える。 */}
+            {!MAIN_GROUP_IDS.includes(group.id) && (
+              <Text style={styles.groupNote}>洗車メニューと一緒にご利用いただけます。</Text>
+            )}
             {group.items.map((item) => renderItem(item, group))}
           </View>
         )}
@@ -264,13 +279,15 @@ export default function MenuSelectScreen() {
             {summary.total > 0 ? yen(summary.total) + (summary.hasQuote ? " ＋ 要見積り" : "") : summary.hasQuote ? "要見積り" : "¥0"}
           </Text>
           <Text style={styles.bottomBarTime}>
-            {selectionCount > 0 ? `${selectionCount}件選択中　` : ""}作業時間目安：{summary.durationText}
+            {optionOnly
+              ? "洗車メニューをお選びください"
+              : `${selectionCount > 0 ? `${selectionCount}件選択中　` : ""}作業時間目安：${summary.durationText}`}
           </Text>
         </View>
         <GoldButton
           title="次へ"
           onPress={() => router.push("/reserve/confirm")}
-          disabled={summary.isEmpty}
+          disabled={summary.isEmpty || optionOnly}
           style={styles.bottomBarButton}
         />
       </View>

@@ -332,7 +332,7 @@ export default function ConfirmScreen() {
           })}
           {payMethod === "store" && storeMethod === "prepaid" && (
             <Text style={styles.paymentNote}>
-              作業が終わったあと、店舗で残高から差し引きます。残高が足りないぶんは別のお支払い方法で承ります。
+              作業が終わったあと、店舗で残高から差し引きます。残高が足りない分は別のお支払い方法で承ります。
             </Text>
           )}
           {/* 事前決済は鍵が設定されているときだけ出す。

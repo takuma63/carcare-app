@@ -68,7 +68,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { GoldButton } from "@/components/GoldButton";
 import { useAuth } from "@/lib/auth-context";
@@ -119,6 +119,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const router = useRouter();
+  const { fresh } = useLocalSearchParams<{ fresh?: string }>();
 
   const [step, setStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
@@ -152,14 +153,19 @@ export default function RegisterScreen() {
 
   /* ★ 一度ログインしたことのある端末なら、ログイン画面へ回す。
      セッションが切れたとき（サーバーが401を返したとき）ここへ戻ってくるが、
-     そのまま新規登録を始められるとアカウントを二重に作ってしまう。 */
+     そのまま新規登録を始められるとアカウントを二重に作ってしまう。
+
+     ただし fresh=1 のときは回さない。ログイン画面の
+     「はじめてご利用の方はこちら」から、ご本人が自分で選んで来た場合で、
+     ここで送り返すとログイン画面と行き来するだけになってしまう。 */
   useEffect(() => {
+    if (fresh === "1") return;
     let alive = true;
     AsyncStorage.getItem("ccc_has_account")
       .then((seen) => { if (alive && seen) router.replace("/(onboarding)/login"); })
       .catch(() => { /* 読めないときは新規登録のまま */ });
     return () => { alive = false; };
-  }, [router]);
+  }, [router, fresh]);
 
   useEffect(() => {
     let alive = true;
@@ -384,7 +390,7 @@ export default function RegisterScreen() {
                   をご覧ください。
                 </Text>
                 <GoldButton title="次へ" onPress={submitName} style={styles.button} />
-                <TouchableOpacity onPress={() => router.push("/(onboarding)/login")} style={styles.linkRow}>
+                <TouchableOpacity onPress={() => router.replace("/(onboarding)/login")} style={styles.linkRow}>
                   <Text style={styles.link}>すでにご登録済みの方はこちら</Text>
                 </TouchableOpacity>
               </Appear>

@@ -24,6 +24,8 @@ interface AuthContextValue {
   isLoading: boolean;
   signIn: (token: string, customer: Customer) => Promise<void>;
   signOut: () => Promise<void>;
+  /** 退会したときに呼ぶ。「この端末は登録済み」の記録も消す */
+  forgetAccount: () => Promise<void>;
   updateCustomer: (customer: Customer) => void;
 }
 
@@ -67,6 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistCustomer(null);
   };
 
+  /* 退会したとき。ログアウトに加えて「この端末は登録済み」も忘れる。
+     ★ これを消さないと、退会後に「はじめてご利用の方はこちら」を押しても
+       ログイン画面へ戻されて、新規登録に進めない
+       （2026-10-25 発注者の指摘）。 */
+  const forgetAccount = async () => {
+    await clearToken();
+    setTokenState(null);
+    persistCustomer(null);
+    await AsyncStorage.removeItem(SEEN_KEY).catch(() => {});
+  };
+
   /* ★ サーバーがトークンを認めなかった（401）ときは、
      端末に残っているログイン状態も捨ててログイン画面へ戻す。
      これをしないと、ホームにはお名前が出たままなのに、
@@ -81,7 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, customer, isLoading, signIn, signOut, updateCustomer: persistCustomer }}>
+    <AuthContext.Provider
+      value={{ token, customer, isLoading, signIn, signOut, forgetAccount, updateCustomer: persistCustomer }}
+    >
       {children}
     </AuthContext.Provider>
   );
