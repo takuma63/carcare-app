@@ -31,14 +31,8 @@ import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 import type { Booking, StampCard } from "@/lib/types";
+import { SHOPS, shopMapLinkUrl } from "@/lib/shops";
 
-const STORES = [
-  { name: "横浜ランドマークタワー店", tel: "0452250118", telLabel: "045-225-0118" },
-  { name: "そごう横浜店", tel: "0454655599", telLabel: "045-465-5599" },
-  { name: "東戸塚オーロラシティ店", tel: "0458202855", telLabel: "045-820-2855" },
-  { name: "六本木ヒルズ店", tel: "0357720055", telLabel: "03-5772-0055" },
-  { name: "銀座店", tel: "0335713581", telLabel: "03-3571-3581" },
-];
 
 const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
 
@@ -53,6 +47,16 @@ function stepIndex(status: string): number {
   if (status === "done") return 2;
   if (status === "in_progress") return 1;
   return 0;
+}
+/* 「10月28日（火）10:00〜」の形。日時の無いご予約（店頭で決める）は null */
+const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+function bookingWhen(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK[d.getDay()]}）${hh}:${mm}〜`;
 }
 function isToday(iso: string | null): boolean {
   if (!iso) return false;
@@ -153,6 +157,76 @@ export default function HomeScreen() {
           <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
 
+        {/* ご予約（2026-10-26 作り直し）
+            発注者の指摘「RECEPTION と番号だけで、予約だと分かりにくい」。
+            ・見出しを「ご予約」にし、金の枠で囲って他のカードと見分けられるようにした
+            ・日時を一番大きく出す（お客様が一番知りたいこと）
+            ・「経路を調べる」で、その店舗の地図をすぐ開ける
+            ・ご予約がある時だけ出し、回数券や車両より上に置く */}
+        {activeBooking && (
+          <View style={[styles.bk, isWorking && styles.bkWorking]}>
+            <View style={styles.bkHead}>
+              <Text style={styles.bkTitle}>ご予約</Text>
+              <StatusBadge status={activeBooking.status} />
+            </View>
+
+            <Text style={styles.bkWhen}>
+              {bookingWhen(activeBooking.preferred_at) ?? "日時は店頭でご相談"}
+            </Text>
+            <Text style={styles.bkMenu}>{primaryMenuName(activeBooking)}</Text>
+            <View style={styles.bkShopRow}>
+              <Feather name="map-pin" size={14} color={colors.goldDeep} />
+              <Text style={styles.bkShop}>{activeBooking.shop ?? "店舗未定"}</Text>
+            </View>
+
+            {/* 作業の進み具合。店舗が管理画面で状態を進めると、ここが動く */}
+            <View style={styles.steps}>
+              {STEPS.map((st, i) => {
+                const now = stepIndex(activeBooking.status);
+                const reached = i <= now;
+                return (
+                  <View key={st.key} style={styles.step}>
+                    {i > 0 ? <View style={[styles.stepLine, reached && styles.stepLineOn]} /> : null}
+                    <View style={[styles.stepDot, reached && styles.stepDotOn]} />
+                    <Text style={[styles.stepLabel, reached && styles.stepLabelOn]}>{st.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {isWorking && (
+              <Text style={styles.ticketNotice}>作業中です。完了したら通知でお知らせします。</Text>
+            )}
+            {activeBooking.status === "done" && (
+              <Text style={styles.ticketDone}>本日の作業が完了しました。ありがとうございました。</Text>
+            )}
+
+            <View style={styles.bkActions}>
+              {activeBooking.shop && shopMapLinkUrl(activeBooking.shop) ? (
+                <TouchableOpacity
+                  style={styles.bkBtn}
+                  onPress={() => Linking.openURL(shopMapLinkUrl(activeBooking.shop as string)).catch(() => {})}
+                  accessibilityLabel={`${activeBooking.shop}への経路を調べる`}
+                >
+                  <Feather name="navigation" size={15} color={colors.text} />
+                  <Text style={styles.bkBtnText}>経路を調べる</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.bkBtn}
+                onPress={() => router.push(`/bookings/${activeBooking.id}`)}
+                accessibilityLabel="ご予約の詳細を開く"
+              >
+                <Feather name="file-text" size={15} color={colors.text} />
+                <Text style={styles.bkBtnText}>予約の詳細</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.bkNo}>
+              予約番号 {activeBooking.public_token.slice(0, 8).toUpperCase()}
+            </Text>
+          </View>
+        )}
+
         {/* 04 車両。ご登録が無ければ「車両登録」として案内を出し、
             あれば「登録済みの車両」として中身を出す。
             乗り換えの多い業態なので、ご来店の記録から自分で選んで
@@ -251,45 +325,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 06 予約チケットカード（S7完了画面と同じ意匠） */}
-        {activeBooking && (
-          <TouchableOpacity onPress={() => router.push(`/bookings/${activeBooking.id}`)} activeOpacity={0.85}>
-            <View style={[styles.ticket, isWorking && styles.ticketWorking]}>
-              <View style={styles.ticketTop}>
-                <Text style={styles.ticketNo}>
-                  RECEPTION ･ {activeBooking.public_token.slice(0, 8).toUpperCase()}
-                </Text>
-                <StatusBadge status={activeBooking.status} />
-              </View>
-              <View style={styles.ticketDash} />
-              <Text style={styles.ticketMenu}>{primaryMenuName(activeBooking)}</Text>
-              <Text style={styles.ticketSub}>{activeBooking.shop ?? "店舗未定"}</Text>
-
-              {/* 作業の進み具合。店舗が管理画面で状態を進めると、ここが動く */}
-              <View style={styles.steps}>
-                {STEPS.map((st, i) => {
-                  const now = stepIndex(activeBooking.status);
-                  const reached = i <= now;
-                  return (
-                    <View key={st.key} style={styles.step}>
-                      {i > 0 ? <View style={[styles.stepLine, reached && styles.stepLineOn]} /> : null}
-                      <View style={[styles.stepDot, reached && styles.stepDotOn]} />
-                      <Text style={[styles.stepLabel, reached && styles.stepLabelOn]}>{st.label}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-
-              {isWorking && (
-                <Text style={styles.ticketNotice}>作業中です。完了したら通知でお知らせします。</Text>
-              )}
-              {activeBooking.status === "done" && (
-                <Text style={styles.ticketDone}>本日の作業が完了しました。ありがとうございました。</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
-
         {/* 05 ご利用履歴への導線。
             お知らせをタブに移したぶん、利用履歴はここから1タップで開く。
             「ホームのどこかにある」ではなく、行として置くのが大事（2026-10-22）。 */}
@@ -309,18 +344,20 @@ export default function HomeScreen() {
           <Text style={styles.storesEyebrow}>Our Stores</Text>
           <Text style={styles.storesTitle}>店舗一覧</Text>
           <Text style={styles.storesHours}>営業時間 10:00〜19:00（平日・土日祝）</Text>
-          {STORES.map((store) => (
+          {/* ★ 押すと店舗ページへ（2026-10-26）。以前は直接電話がかかっていたが、
+              場所を確かめたい方や押し間違いがあるため、地図と電話ボタンのあるページを挟む */}
+          {SHOPS.map((store) => (
             <TouchableOpacity
               key={store.name}
               style={styles.storeCard}
-              onPress={() => Linking.openURL(`tel:${store.tel}`)}
-              accessibilityLabel={`${store.name}に電話する`}
+              onPress={() => router.push(`/shops/${encodeURIComponent(store.name)}`)}
+              accessibilityLabel={`${store.name}のご案内を開く`}
             >
-              <Text style={styles.storeName}>{store.name}</Text>
-              <View style={styles.storeTelWrap}>
-                <Feather name="phone" size={13} color={colors.goldDeep} />
-                <Text style={styles.storeTel}>{store.telLabel}</Text>
+              <View style={styles.storeMain}>
+                <Text style={styles.storeName}>{store.name}</Text>
+                <Text style={styles.storeTel}>{store.tel}</Text>
               </View>
+              <Feather name="chevron-right" size={18} color={colors.textLight} />
             </TouchableOpacity>
           ))}
         </View>
@@ -469,47 +506,50 @@ const styles = StyleSheet.create({
   },
   newsText: { flex: 1, fontFamily: fonts.sans, fontSize: fontSize.body, color: colors.textLight },
   newsTextOn: { fontFamily: fonts.sansMedium, color: colors.text },
-  ticket: {
-    marginTop: spacing.md,
+  /* ご予約カード。金の枠で囲い、ホームの他のカード（灰色の細線）と見分けられるようにする */
+  bk: {
+    marginTop: spacing.lg,
     marginHorizontal: spacing.lg,
     backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.gold,
     borderRadius: radius,
     padding: spacing.md,
     paddingHorizontal: spacing.lg,
-    ...shadow,
   },
-  ticketWorking: {
-    borderWidth: 1,
-    borderColor: colors.gold,
-  },
-  ticketTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  ticketNo: {
+  bkWorking: { backgroundColor: "#fffaf0" },
+  bkHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
+  bkTitle: { fontFamily: fonts.serifJp, fontSize: fontSize.h3, color: colors.goldDeep, letterSpacing: 1 },
+  bkWhen: {
     fontFamily: fonts.num,
     fontVariant: ["tabular-nums"],
-    fontSize: 12,
-    letterSpacing: 1.5,
-    color: colors.goldDeep,
-  },
-  ticketDash: {
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    borderColor: colors.border,
-    marginVertical: spacing.sm,
-  },
-  ticketMenu: {
-    fontFamily: fonts.serifJp,
-    fontSize: fontSize.h3,
+    fontSize: 22,
     color: colors.text,
-    marginBottom: 2,
   },
-  ticketSub: {
-    fontFamily: fonts.sans,
-    fontSize: fontSize.caption,
+  bkMenu: { fontFamily: fonts.sansMedium, fontSize: fontSize.body, color: colors.text, marginTop: 6 },
+  bkShopRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  bkShop: { fontFamily: fonts.sans, fontSize: fontSize.caption, color: colors.textLight },
+  bkActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+  bkBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.text,
+    borderRadius: radius,
+    backgroundColor: colors.white,
+  },
+  bkBtnText: { fontFamily: fonts.sansMedium, fontSize: fontSize.caption, color: colors.text },
+  bkNo: {
+    marginTop: spacing.sm,
+    fontFamily: fonts.num,
+    fontVariant: ["tabular-nums"],
+    fontSize: 11,
     color: colors.textLight,
+    textAlign: "right",
   },
   ticketNotice: {
     marginTop: spacing.sm,
@@ -634,15 +674,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.text,
   },
-  storeTelWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+  storeMain: { flex: 1, gap: 2 },
   storeTel: {
     fontFamily: fonts.num,
     fontVariant: ["tabular-nums"],
     fontSize: fontSize.caption,
-    color: colors.goldDeep,
+    color: colors.textLight,
   },
 });

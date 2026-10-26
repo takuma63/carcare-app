@@ -11,12 +11,13 @@ import { Feather } from "@expo/vector-icons";
 import { findShop, shopMapEmbedUrl, shopMapLinkUrl } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
-export function ShopMap({ shopName }: { shopName: string | null }) {
+/* mapOnly：地図だけを出す（店舗ページ用。住所・電話・経路はページ側で大きく出すため） */
+export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null; mapOnly?: boolean }) {
   const shop = findShop(shopName);
   if (!shop) return null;
 
   return (
-    <View style={styles.box}>
+    <View style={mapOnly ? styles.bare : styles.box}>
       <View style={styles.map}>
         {React.createElement("iframe", {
           src: shopMapEmbedUrl(shop.name),
@@ -26,6 +27,8 @@ export function ShopMap({ shopName }: { shopName: string | null }) {
         })}
       </View>
 
+      {mapOnly ? null : (
+      <>
       <Text style={styles.address}>
         {shop.zip} {shop.address}
       </Text>
@@ -46,11 +49,14 @@ export function ShopMap({ shopName }: { shopName: string | null }) {
           <Text style={styles.actionText}>{shop.tel}</Text>
         </TouchableOpacity>
       </View>
+      </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  bare: {},
   box: {
     marginTop: spacing.sm,
     marginBottom: spacing.md,
