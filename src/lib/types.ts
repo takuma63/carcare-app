@@ -53,6 +53,8 @@ export interface MenuItem {
   prices?: Record<string, number>;
   options?: MenuOption[];
   priceFrom?: boolean;
+  /** メニューの写真。予約サイト上の場所（例 images/menu/wheel-coating.jpg）。オプションのみ */
+  photo?: string;
 }
 
 export interface MenuGroup {

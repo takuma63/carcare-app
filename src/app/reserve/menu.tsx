@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import {
+  Image,
   Linking,
   LayoutAnimation,
   Platform,
@@ -25,6 +26,7 @@ import { ReserveHeader } from "@/components/ReserveHeader";
 import { GoldButton } from "@/components/GoldButton";
 import { useReservation } from "@/lib/reservation-context";
 import { findShop } from "@/lib/shops";
+import { siteAssetUrl } from "@/lib/api";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 import type { MenuGroup, MenuItem } from "@/lib/types";
 
@@ -127,6 +129,11 @@ export default function MenuSelectScreen() {
           <View style={[styles.checkbox, isSelected && styles.checkboxOn]}>
             {isSelected && <Feather name="check" size={14} color={colors.white} />}
           </View>
+          {item.photo ? (
+            /* メニューの写真（2026-10-26）。Web予約と同じ画像・同じ並び（4:3）。
+               画像は予約サイトから読む。読めなくても枠だけ残り、選ぶ操作には影響しない */
+            <Image source={{ uri: siteAssetUrl(item.photo) }} style={styles.itemPhoto} resizeMode="cover" />
+          ) : null}
           <View style={styles.itemBody}>
             <Text style={styles.itemName}>
               {item.name}
@@ -453,6 +460,13 @@ const styles = StyleSheet.create({
   },
   optionChipTextOn: {
     color: colors.white,
+  },
+  itemPhoto: {
+    width: 72,
+    height: 54,               // 4:3（Web予約の写真と同じ比率）。左右の間隔は itemRow の gap で取る
+    backgroundColor: colors.bg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   qtyRow: {
     flexDirection: "row",

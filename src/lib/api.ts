@@ -15,6 +15,13 @@ import type { Booking, Coupon, Customer, MenuCategories, MenuGroup, PrepaidEntry
 
 const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?? "";
 
+/* 予約サイトに置いてある画像の完全なURL（メニューの写真など）。
+   API は https://reserve.carcare-center.co.jp/api 、画像はその1つ上に置いてある。 */
+export function siteAssetUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  return API_BASE.replace(/\/api\/?$/, "") + "/" + path.replace(/^\//, "");
+}
+
 /* ★ 車種判定だけ接続先が違う
    Anthropic が東アジア（予約システムが動いている地域）からのアクセスを
    拒否するため、この処理だけ日本東リージョンの別アプリに分けてある。
