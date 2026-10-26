@@ -110,11 +110,11 @@ export default function VehiclesScreen() {
 
   const onRemove = (v: Vehicle) => {
     Alert.alert(
-      "この車両を外しますか",
-      `${v.title}\n\nご来店の記録は残ります。もう一度「履歴から選ぶ」で戻せます。`,
+      "この車両を削除しますか",
+      `${v.title}\n\n店舗でのご来店の記録は消えません。`,
       [
         { text: "やめる", style: "cancel" },
-        { text: "外す", style: "destructive", onPress: () => run(() => unselectVehicle(v.id)) },
+        { text: "削除", style: "destructive", onPress: () => run(() => unselectVehicle(v.id)) },
       ]
     );
   };
@@ -170,7 +170,7 @@ export default function VehiclesScreen() {
                       {v.color ? <Text style={styles.cardSub}>{v.color}</Text> : null}
                     </View>
                     <TouchableOpacity onPress={() => onRemove(v)} hitSlop={HIT_SLOP} disabled={busy}>
-                      <Text style={styles.remove}>外す</Text>
+                      <Text style={styles.remove}>削除</Text>
                     </TouchableOpacity>
                   </View>
                 </Card>
