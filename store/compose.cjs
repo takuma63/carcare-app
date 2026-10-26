@@ -12,11 +12,12 @@ const D = __dirname;
 const SLIDES = [
   ["01", "Home", "ご予約も、回数券も、<br>ひと目で。", "次のご予約・回数券の残高・来店スタンプをホームにまとめました", "s1-home.png"],
   ["02", "Reservation", "空き状況を見て、<br>そのままご予約。", "5店舗の空きを ○△× でご案内。お電話なしでご予約いただけます", "s2-calendar.png"],
-  ["03", "Menu", "お車に合わせた料金が、<br>すぐにわかる。", "車種をお選びいただくと、サイズに合わせた料金を表示します", "s3-menu.png"],
-  ["04", "Option", "オプションも、<br>写真を見て選べる。", "車内除菌・ホイール・レザーコーティングまで", "s3b-options.png"],
-  ["05", "Coupon", "会員さまだけの<br>クーポンとスタンプ。", "ご来店ごとにスタンプが貯まり、特典クーポンをお届けします", "s4-coupons.png"],
-  ["06", "Prepaid", "回数券の残高を、<br>いつでも確認。", "ご利用の履歴もアプリでご覧いただけます", "s5-prepaid.png"],
-  ["07", "Stores", "お店の場所と入口を、<br>地図でご案内。", "駐車場の入口の目印も。そのまま経路を調べられます", "s6-shop.png"],
+  ["03", "AI Size Check", "車種を入れるだけで、<br>AIがサイズを判定。", "メーカー名と車種から、お車に合ったカテゴリーをご案内します", "s2c-ai.png"],
+  ["04", "Menu", "お車に合わせた料金が、<br>すぐにわかる。", "判定したサイズに合わせて、メニューの料金を表示します", "s3-menu.png"],
+  ["05", "Option", "オプションも、<br>写真を見て選べる。", "車内除菌・ホイール・レザーコーティングまで", "s3b-options.png"],
+  ["06", "Coupon", "会員さまだけの<br>クーポンとスタンプ。", "ご来店ごとにスタンプが貯まり、特典クーポンをお届けします", "s4-coupons.png"],
+  ["07", "Prepaid", "回数券の残高を、<br>いつでも確認。", "ご利用の履歴もアプリでご覧いただけます", "s5-prepaid.png"],
+  ["08", "Stores", "お店の場所と入口を、<br>地図でご案内。", "駐車場の入口の目印も。そのまま経路を調べられます", "s6-shop.png"],
 ];
 (async () => {
   const b = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new", args: ["--no-sandbox", "--allow-file-access-from-files"] });

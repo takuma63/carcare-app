@@ -23,7 +23,7 @@ export function StepIndicator({ current }: { current: 1 | 2 | 3 | 4 }) {
                 <View style={[styles.dot, active && styles.dotActive]}>
                   <Text style={[styles.dotText, active && styles.dotTextActive]}>{step}</Text>
                 </View>
-                <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
+                <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>{label}</Text>
               </View>
               {step < STEP_LABELS.length && <View style={[styles.line, step < current && styles.lineActive]} />}
             </React.Fragment>
@@ -45,6 +45,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     paddingHorizontal: spacing.md,
   },
+  /* ★ ラベルは12px（2026-10-26）。13pxでは「店舗・日時」（約65px）が
+     欄の幅64pxを超えて「店舗・日／時」と折り返していた。 */
   dotWrap: {
     alignItems: "center",
     width: 64,
@@ -74,7 +76,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 4,
     fontFamily: fonts.sans,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.textLight,
     textAlign: "center",
   },
