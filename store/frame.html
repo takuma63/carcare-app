@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8">
+<style>
+  :root { --bg:#1a1a1a; --gold:#c4a24a; --ink:#ffffff; --sub:#d6cfbf; }
+  html,body { margin:0; width:440px; height:956px; overflow:hidden; background:var(--bg); }
+  body { position:relative; font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif; }
+  .text { position:absolute; left:0; right:0; top:50px; text-align:center; padding:0 28px; }
+  .eyebrow { font-family:"Baskerville","Didot",serif; font-size:13px; letter-spacing:.42em; color:var(--gold); text-transform:uppercase; }
+  .rule { width:28px; height:1px; background:var(--gold); margin:12px auto 16px; }
+  h1 { margin:0; font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro",serif; font-weight:600; color:var(--ink);
+       font-size:31px; line-height:1.38; letter-spacing:.04em; }
+  p { margin:10px auto 0; max-width:330px; font-size:13px; line-height:1.6; color:var(--sub); letter-spacing:.03em; }
+  .screen { position:absolute; left:50%; transform:translateX(-50%); top:268px; width:350px;
+            border-radius:30px; overflow:hidden; border:1.5px solid #3b3a36; box-shadow:0 0 0 6px #232220; background:#fff; }
+  .screen img { display:block; width:100%; }
+</style>
+<div class="text">
+  <div class="eyebrow" id="eb"></div><div class="rule"></div>
+  <h1 id="h"></h1><p id="s"></p>
+</div>
+<div class="screen"><img id="img"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.getElementById("eb").textContent = q.get("eb");
+  document.getElementById("h").innerHTML = q.get("h");
+  document.getElementById("s").textContent = q.get("s");
+  document.getElementById("img").src = q.get("img");
+</script>

@@ -24,30 +24,46 @@ App Store Connect に入力する内容をまとめたもの。
 
 ---
 
+## プロモーションテキスト（170文字以内・審査なしでいつでも変えられる）
+
+```
+空き状況を見て、そのままご予約。回数券の残高やクーポン、作業の進み具合もアプリでいつでもご確認いただけます。
+```
+
 ## 説明文
+
+★ 2026-10-26 全面改訂。以前の版は「パスワードは不要です」「お車→メニュー→店舗の順」など、
+  今のアプリと食い違う記述が残っていた（Entra移行でパスワード必須、予約は店舗を最初に選ぶ形に変更）。
 
 ```
 カーケアセンター公式アプリ
 
-洗車・コーティング専門店「カーケアセンター」のご予約アプリです。
-横浜・東京の5店舗で、ご予約からご利用状況の確認までご利用いただけます。
+横浜・東京に5店舗を構える、洗車・コーティング専門店「カーケアセンター」の公式アプリです。
+ご予約から回数券の残高確認まで、アプリひとつでお使いいただけます。
 
-■ かんたんご予約
-お車・メニュー・店舗・日時を選ぶだけ。空いている時間だけが表示されるので、
-電話でのやりとりなしにご予約いただけます。
-メニューがお決まりでない場合は、ご予約枠だけお押さえいただくこともできます。
+■ 空き状況を見て、そのままご予約
+店舗を選ぶと、一週間の空き状況を ○△× でご案内します。
+ご希望の時間を選び、お車とメニューを選ぶだけでご予約いただけます。
+各店の店長をご指名いただくこともできます（指名料がかかります）。
+
+■ お車に合わせた料金がすぐにわかる
+車種を入力すると、お車のサイズに合わせた料金を表示します。
+車内除菌・ホイールコーティング・レザーコーティングなどのオプションも、写真を見てお選びいただけます。
+
+■ ご予約と作業の進み具合をホームで確認
+次のご予約をホームに表示します。作業中・完了の状況もアプリでわかり、作業が終わると通知でお知らせします。
+店舗までの経路も、ご予約の画面からそのまま調べられます。
 
 ■ 回数券の残高をいつでも確認
-お手持ちの回数券の残高と、ご利用の履歴をアプリで確認できます。
-ご来店時は、店舗で残高からお支払いいただけます。
+お手持ちの回数券の残高と、ご利用の履歴をご確認いただけます。
+ご予約時のお支払い方法に、回数券をお選びいただくこともできます。
 
 ■ 来店スタンプ・クーポン
-ご来店のたびにスタンプが貯まり、規定回数で特典クーポンをお届けします。
-お持ちのクーポンは、ご予約時にお選びいただけます。
+ご来店のたびにスタンプが貯まり、規定の回数で特典クーポンをお届けします。
+会員さま限定のクーポンは、ご予約の際にお選びいただけます。
 
-■ ご予約の確認
-現在のご予約内容、これまでのご利用履歴をいつでもご確認いただけます。
-作業が完了したら、通知でお知らせします。
+■ お知らせ
+営業のご案内や、メンテナンスの時期のお知らせなどを、プッシュ通知でお届けします。
 
 ■ 店舗
 ・横浜ランドマークタワー店
@@ -55,16 +71,19 @@ App Store Connect に入力する内容をまとめたもの。
 ・東戸塚オーロラシティ店
 ・六本木ヒルズ店
 ・銀座店
+各店の地図と、駐車場の入口の目印をアプリでご確認いただけます。
 
-※ コーティングのご予約はお電話で承っております。
-※ ご利用には会員登録（お名前とご連絡先）が必要です。パスワードは不要です。
+※ コーティングは、お車の状態を確認したうえで日程を調整するため、お電話でご予約を承っております。
+※ ご利用には会員登録（お名前・メールアドレス・電話番号・パスワード）が必要です。
 ```
 
 ## キーワード（100文字以内・カンマ区切り）
 
 ```
-洗車,コーティング,カーケア,予約,車,カーコーティング,洗車予約,横浜,六本木,銀座,回数券
+洗車,コーティング,予約,車,洗車予約,手洗い洗車,ガラスコーティング,車内クリーニング,横浜,みなとみらい,東戸塚,六本木,銀座,回数券
 ```
+
+アプリ名（カーケアセンター）の語は名前だけで検索に当たるので、キーワードには入れない。
 
 ## サポートURL
 
@@ -122,16 +141,20 @@ code sent by email, so please use the demo account rather than creating
 a new one.
 
 WHAT YOU CAN DO WITH THE DEMO ACCOUNT
-- Home: booking status, registered vehicles, store list
-- Booking flow (4 steps): vehicle category, menu, store and date/time,
-  confirmation
-- Announcements, coupons, visit history
+- Home: upcoming booking with work progress, registered vehicles,
+  prepaid balance, visit stamps, store list (map, entrance, call)
+- Booking flow (4 steps): store and date/time (weekly availability),
+  vehicle size, menu, confirmation
+- Announcements, coupons, prepaid balance history, visit history
 - Settings: profile, notifications, account deletion
 
 ABOUT CREATING A BOOKING
 Bookings made in the app are written to the live store system.
 You may create one to verify the flow; we will delete it afterwards.
-There is no payment step in the app. All payments are made in store.
+There is no payment step in the app. All payments are made in store
+(cash, card, e-money, or the store's prepaid balance). The prepaid balance
+is sold only at the stores for car wash services performed in person,
+so no in-app purchase is involved.
 
 ACCOUNT DELETION
 Settings tab -> "アカウントを削除" (Delete account).
@@ -240,15 +263,21 @@ the menu contents; those bookings are taken by phone.
 
 ## スクリーンショット
 
-`~/Desktop/carcare-app-screenshots/` の9枚から使用（1170×2532 / iPhone 6.5インチ相当）。
+★ 2026-10-26 作り直し。`store/screenshots/` の7枚（1320×2868 / iPhone 6.9インチ）。
+  6.9インチを入れておけば、小さい画面向けはApple側で縮小して使われる。
+  作り方は `store/compose.cjs` の冒頭。画面はデモ用のお客様（山田 太郎 様）で撮っている。
 
-提出に使う順番：
-1. ホーム（残高・クーポン・スタンプ）
-2. 回数券の残高
-3. クーポンとスタンプ
-4. 予約2 メニュー
-5. 予約3 店舗と日時
-6. 予約履歴
+| 順 | ファイル | 見出し |
+|---|---|---|
+| 1 | appstore-01.png | ご予約も、回数券も、ひと目で。 |
+| 2 | appstore-02.png | 空き状況を見て、そのままご予約。 |
+| 3 | appstore-03.png | お車に合わせた料金が、すぐにわかる。 |
+| 4 | appstore-04.png | オプションも、写真を見て選べる。 |
+| 5 | appstore-05.png | 会員さまだけのクーポンとスタンプ。 |
+| 6 | appstore-06.png | 回数券の残高を、いつでも確認。 |
+| 7 | appstore-07.png | お店の場所と入口を、地図でご案内。 |
+
+検索結果に出るのは最初の3枚なので、予約の流れ（ホーム→空き状況→料金）を前に置いた。
 
 **iPad のスクリーンショットは不要**（`ios.supportsTablet: false` のため）。
 
