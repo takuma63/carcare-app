@@ -1,5 +1,5 @@
 /* ============================================================
-   App Store のスクリーンショットを作る（1320×2868 / iPhone 6.9インチ）
+   App Store（1320×2868）と Google Play（1080×2160）のスクリーンショットを作る
    ------------------------------------------------------------
    raw/ のアプリ画面（430×932 を3倍で撮影）に、見出しを付けて frame.html で組む。
    使い方：  node store/compose.cjs   （puppeteer-core と Google Chrome が要る）
@@ -22,12 +22,19 @@ const SLIDES = [
 (async () => {
   const b = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new", args: ["--no-sandbox", "--allow-file-access-from-files"] });
   const p = await b.newPage();
-  await p.setViewport({ width: 440, height: 956, deviceScaleFactor: 3 });
-  for (const [n, eb, h, s, img] of SLIDES) {
-    const url = "file://" + D + "/frame.html?" + new URLSearchParams({ eb, h, s, img: "raw/" + img }).toString();
-    await p.goto(url); await new Promise(r => setTimeout(r, 700));
-    await p.screenshot({ path: D + "/screenshots/appstore-" + n + ".png" });
-    console.log("作成:", "appstore-" + n + ".png");
+  // App Store は 1320×2868、Google Play は縦横比2:1までなので 1080×2160 で同じ絵を作る
+  const TARGETS = [
+    ["appstore", { width: 440, height: 956, deviceScaleFactor: 3 }],
+    ["googleplay", { width: 440, height: 880, deviceScaleFactor: 1080 / 440 }],
+  ];
+  for (const [prefix, viewport] of TARGETS) {
+    await p.setViewport(viewport);
+    for (const [n, eb, h, s, img] of SLIDES) {
+      const url = "file://" + D + "/frame.html?" + new URLSearchParams({ eb, h, s, img: "raw/" + img }).toString();
+      await p.goto(url); await new Promise(r => setTimeout(r, 700));
+      await p.screenshot({ path: D + "/screenshots/" + prefix + "-" + n + ".png" });
+      console.log("作成:", prefix + "-" + n + ".png");
+    }
   }
   await b.close();
 })();
