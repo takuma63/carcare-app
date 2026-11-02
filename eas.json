@@ -16,7 +16,10 @@
       "ios": {
         "simulator": false
       },
-      "channel": "preview"
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
@@ -28,6 +31,11 @@
         "language": "ja",
         "sku": "carcare-center-app",
         "ascAppId": "6825233640"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-key.json",
+        "track": "internal",
+        "releaseStatus": "draft"
       }
     }
   }

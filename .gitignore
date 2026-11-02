@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Google Play の提出用キー（絶対にコミットしない）
+google-play-key.json
+*.p8
