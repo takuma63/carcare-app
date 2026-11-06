@@ -43,3 +43,6 @@ yarn-error.*
 # Google Play の提出用キー（絶対にコミットしない）
 google-play-key.json
 *.p8
+
+# Firebase（公開リポジトリのためコミットしない。EASのファイル変数 GOOGLE_SERVICES_JSON から渡す）
+google-services.json
