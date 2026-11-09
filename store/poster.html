@@ -1,0 +1,58 @@
+<!doctype html><meta charset="utf-8">
+<!-- 店頭用ポスター（A4縦）。App Store の紹介画像（frame.html）と同じ世界観にそろえている。
+     書き出し：scripts なし。puppeteer で開いて PDF / PNG にする（store/poster/ に出力） -->
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --bg:#1a1a1a; --band:#222120; --gold:#c4a24a; --ink:#ffffff; --sub:#d6cfbf; --line:#3b3a36; }
+  html,body { margin:0; background:var(--bg); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .sheet { position:relative; width:210mm; height:297mm; overflow:hidden; background:var(--bg);
+           font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif; }
+
+  /* ロゴは黒字のPNGなので、反転して背景になじませる */
+  .logo { position:absolute; top:15mm; left:50%; transform:translateX(-50%); width:30mm;
+          filter:invert(1); mix-blend-mode:screen; }
+
+  .text { position:absolute; top:40mm; left:0; right:0; text-align:center; }
+  .eyebrow { font-family:"Baskerville","Didot",serif; font-size:11pt; letter-spacing:.42em; color:var(--gold); padding-left:.42em; }
+  .rule { width:9mm; height:.3mm; background:var(--gold); margin:3.5mm auto 5mm; }
+  h1 { margin:0; font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro",serif; font-weight:600; color:var(--ink);
+       font-size:32pt; line-height:1.4; letter-spacing:.06em; }
+  .lead { margin:5mm 0 0; font-size:11pt; line-height:1.8; color:var(--sub); letter-spacing:.05em; }
+
+  .phone { position:absolute; width:66mm; border-radius:9mm; overflow:hidden; background:#fff;
+           border:.4mm solid var(--line); box-shadow:0 0 0 1.8mm #232220; }
+  .phone img { display:block; width:100%; }
+  .phone--back { top:132mm; left:calc(50% + 4mm); }
+  .phone--front { top:120mm; right:calc(50% + 4mm); }
+
+  .band { position:absolute; left:0; right:0; bottom:0; height:76mm; background:var(--band);
+          border-top:.3mm solid var(--gold); display:flex; align-items:center; justify-content:center; gap:11mm; }
+  .qr { width:44mm; height:44mm; background:#fff; padding:2.5mm; box-sizing:border-box; }
+  .qr img { display:block; width:100%; height:100%; }
+  .cta h2 { margin:0; font-family:"Hiragino Mincho ProN",serif; font-weight:600; color:var(--ink);
+            font-size:19pt; line-height:1.5; letter-spacing:.05em; }
+  .cta p { margin:3.5mm 0 0; font-size:10pt; line-height:1.8; color:var(--sub); letter-spacing:.04em; }
+  .cta .stores { margin-top:5mm; padding-top:4mm; border-top:.2mm solid var(--line);
+                 font-family:"Baskerville",serif; font-size:10pt; letter-spacing:.2em; color:var(--gold); }
+</style>
+<div class="sheet">
+  <img class="logo" src="../../../carcare-reservation/images/logo.png" alt="CARCARE CENTER">
+
+  <div class="text">
+    <div class="eyebrow">OFFICIAL APP</div><div class="rule"></div>
+    <h1>公式アプリが、<br>できました。</h1>
+    <p class="lead">ご予約、作業の進み具合、回数券の残高まで。<br>スマートフォンひとつで。</p>
+  </div>
+
+  <div class="phone phone--back"><img src="raw/s2-calendar.png" alt=""></div>
+  <div class="phone phone--front"><img src="raw/s1-home.png" alt=""></div>
+
+  <div class="band">
+    <div class="qr"><img src="qr/app-qr-print.png" alt="QRコード"></div>
+    <div class="cta">
+      <h2>カメラで読み取って、<br>ダウンロード。</h2>
+      <p>ご利用は無料です。<br>iPhone・Android どちらにも対応しています。</p>
+      <div class="stores">App Store ・ Google Play</div>
+    </div>
+  </div>
+</div>
