@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8">
+<!-- 名刺サイズのアプリ案内カード（91×55mm・横・白地）。横浜エリアで配る用。
+     ポスター（poster.html）と同じく puppeteer で PDF / PNG にする（store/card/ に出力）。
+     ストアのバッジは各社の公式配布物（store/badges/）。形や色を加工しないこと -->
+<style>
+  @page { size: 91mm 55mm; margin: 0; }
+  :root { --ink:#1a1a1a; --sub:#55524c; --gold:#b39340; --line:#e4e0d6; }
+  html,body { margin:0; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .card { position:relative; width:91mm; height:55mm; overflow:hidden; background:#fff; box-sizing:border-box;
+          padding:5.5mm 6mm 5mm; display:flex; gap:5mm; font-family:"Noto Sans JP","Hiragino Sans",sans-serif; color:var(--ink); }
+
+  .main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .logo { width:21mm; display:block; margin-left:-1mm; }
+  .eyebrow { margin-top:3.6mm; font-family:"Baskerville","Didot",serif; font-size:5.5pt; letter-spacing:.38em; color:var(--gold); }
+  h1 { margin:1.2mm 0 0; font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro",serif; font-weight:600;
+       font-size:11.5pt; line-height:1.3; letter-spacing:.05em; }
+  .lead { margin:1.6mm 0 0; font-size:6pt; line-height:1.6; color:var(--sub); letter-spacing:.02em; }
+  .badges { margin-top:auto; display:flex; align-items:center; gap:1.6mm; }
+  .badges .as { height:6.6mm; display:block; }
+  /* Google の PNG は周りに余白を含むので、見た目の高さを App Store にそろえる */
+  .badges .gp { height:9.75mm; display:block; margin:-1.57mm -1.42mm; }
+
+  .side { width:27mm; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          border-left:.2mm solid var(--line); padding-left:5mm; }
+  .qr { width:27mm; height:27mm; display:block; }
+  .side p { margin:2mm 0 0; font-size:5.5pt; line-height:1.5; text-align:center; color:var(--sub); }
+  .side .url { margin-top:1mm; font-size:5pt; color:var(--ink); letter-spacing:.01em; white-space:nowrap; }
+</style>
+<div class="card">
+  <div class="main">
+    <img class="logo" src="../../../carcare-reservation/images/logo.png" alt="CARCARE CENTER">
+    <div class="eyebrow">OFFICIAL APP</div>
+    <h1>カーケアセンター<br>公式アプリ</h1>
+    <p class="lead">ご予約、お車の登録、回数券の残高を<br>スマートフォンひとつで。</p>
+    <div class="badges">
+      <img class="as" src="badges/app-store.svg" alt="App Store からダウンロード">
+      <img class="gp" src="badges/google-play.png" alt="Google Play で手に入れよう">
+    </div>
+  </div>
+  <div class="side">
+    <img class="qr" src="qr/app-qr-tight.svg" alt="QRコード">
+    <p>読み取ってダウンロード</p>
+    <p class="url">reserve.carcare-center.co.jp/app</p>
+  </div>
+</div>
