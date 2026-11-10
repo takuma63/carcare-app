@@ -74,6 +74,18 @@ export const SHOPS: Shop[] = [
 
 export const SHOP_NAMES = SHOPS.map((s) => s.name);
 
+/* ---------- アプリで予約できる店舗（2026-11-11 発注者の指示） ----------
+   東京エリアから本格運用を始め、横浜エリアは東京で安定してから使う。
+   それまで予約の店舗選びには六本木・銀座だけを出す（ホームの「店舗一覧」は全店舗のまま）。
+   ★ Web予約の shop-data.js の ONLINE_BOOKING_SHOPS と同じ値にすること。
+     横浜エリアを始めるときは両方とも null に戻す（null＝全店舗）。 */
+export const ONLINE_BOOKING_SHOPS: string[] | null = ["六本木ヒルズ店", "銀座店"];
+export function isOnlineBookingShop(name: string | null | undefined): boolean {
+  if (!findShop(name)) return false;
+  return !ONLINE_BOOKING_SHOPS || ONLINE_BOOKING_SHOPS.includes(name as string);
+}
+export const ONLINE_SHOP_NAMES = SHOP_NAMES.filter((n) => isOnlineBookingShop(n));
+
 export function findShop(name: string | null | undefined): Shop | null {
   if (!name) return null;
   return SHOPS.find((s) => s.name === name) ?? null;
@@ -87,7 +99,7 @@ export function neighborShops(shopName: string | null | undefined): Shop[] {
   const base = findShop(shopName);
   if (!base) return [];
   return SHOPS
-    .filter((x) => x.area === base.area && x.name !== base.name)
+    .filter((x) => x.area === base.area && x.name !== base.name && isOnlineBookingShop(x.name))
     .sort((a, b) => (a.areaFar ? 1 : 0) - (b.areaFar ? 1 : 0));
 }
 

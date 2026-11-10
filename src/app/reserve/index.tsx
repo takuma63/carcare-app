@@ -31,10 +31,10 @@ import { useReservation } from "@/lib/reservation-context";
 import { fetchAvailabilityMany, fetchStaffShifts, type AvailabilityDay, type NominationStaff, type SlotState } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
 import { ShopMap } from "@/components/ShopMap";
-import { SHOP_NAMES, findShop, neighborShops } from "@/lib/shops";
+import { ONLINE_SHOP_NAMES, findShop, isOnlineBookingShop, neighborShops } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
-const STORE_NAMES = SHOP_NAMES;   // 大元は src/lib/shops.ts
+const STORE_NAMES = ONLINE_SHOP_NAMES;   // 予約できる店舗だけ（大元は src/lib/shops.ts）
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 const WEEK_DAYS = 7;
 /* ご予約を承る先の限度。Web予約（shop-data.js の bookingHorizonDate）と揃える */
@@ -84,6 +84,12 @@ export default function DateTimeScreen() {
   const [slotError, setSlotError] = useState<string | null>(null);
   /* 近隣店の空き（同じエリアの店だけ）。Web予約と同じご案内 */
   const [nearby, setNearby] = useState<{ shop: string; days: AvailabilityDay[]; far: boolean }[]>([]);
+
+  /* いま予約を受け付けていない店舗（横浜エリア）が選ばれたままなら外す。
+     前回の予約の途中で選んだ店舗が残っている場合に備える。 */
+  useEffect(() => {
+    if (shop && !isOnlineBookingShop(shop)) setShop(null);
+  }, [shop]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [nearbyOpen, setNearbyOpen] = useState(false);
 
   /* ★ 選ぶたびに、次に決めていただく場所まで自動で送る（2026-10-23 発注者の要望）。
