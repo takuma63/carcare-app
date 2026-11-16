@@ -79,7 +79,8 @@ export const SHOP_NAMES = SHOPS.map((s) => s.name);
    それまで予約の店舗選びには六本木・銀座だけを出す（ホームの「店舗一覧」は全店舗のまま）。
    ★ Web予約の shop-data.js の ONLINE_BOOKING_SHOPS と同じ値にすること。
      横浜エリアを始めるときは両方とも null に戻す（null＝全店舗）。 */
-export const ONLINE_BOOKING_SHOPS: string[] | null = ["六本木ヒルズ店", "銀座店"];
+// ★ 2026-11-16 横浜エリアも新システムで始めた → null（全店舗）
+export const ONLINE_BOOKING_SHOPS: string[] | null = null;
 export function isOnlineBookingShop(name: string | null | undefined): boolean {
   if (!findShop(name)) return false;
   return !ONLINE_BOOKING_SHOPS || ONLINE_BOOKING_SHOPS.includes(name as string);
