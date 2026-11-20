@@ -77,6 +77,8 @@ import * as entra from "@/lib/entra";
 import { registerForPushNotifications } from "@/lib/push";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
+import { LangToggle } from "@/components/LangToggle";
 /* ★ 個人情報保護法 第21条第2項：本人から直接（この入力フォームを含む）
    個人情報を取得するときは、あらかじめ利用目的を明示しなければならない。
    「公表」だけでは足りないため、最初の入力の前（STEP 1）に利用目的と
@@ -228,20 +230,20 @@ export default function RegisterScreen() {
 
   /* ---------- ① お名前 ---------- */
   const submitName = () => {
-    if (!name.trim()) return setError("お名前を入力してください");
+    if (!name.trim()) return setError(t("お名前を入力してください"));
     go("login");
   };
 
   /* ---------- ② ログインに使う情報 ---------- */
   const submitLogin = () => {
     const mail = email.trim();
-    if (!mail) return setError("メールアドレスを入力してください");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setError("メールアドレスの形式をご確認ください");
-    if (password.length < 8) return setError("パスワードは8文字以上でご設定ください");
+    if (!mail) return setError(t("メールアドレスを入力してください"));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setError(t("メールアドレスの形式をご確認ください"));
+    if (password.length < 8) return setError(t("パスワードは8文字以上でご設定ください"));
     if (passwordKinds(password) < 3) {
-      return setError("大文字・小文字・数字・記号のうち3種類以上を含めてください");
+      return setError(t("大文字・小文字・数字・記号のうち3種類以上を含めてください"));
     }
-    if (password !== password2) return setError("パスワードが一致しません。もう一度ご確認ください");
+    if (password !== password2) return setError(t("パスワードが一致しません。もう一度ご確認ください"));
     go("info");
   };
 
@@ -249,8 +251,8 @@ export default function RegisterScreen() {
   const sendCode = async () => {
     setError(null);
     /* ご来店の記録と結びつける鍵なので、ここは必ずお伺いする */
-    if (phone.length < 10) return setError("電話番号を市外局番から入力してください");
-    if (phone.length > 11) return setError("電話番号の桁数をご確認ください");
+    if (phone.length < 10) return setError(t("電話番号を市外局番から入力してください"));
+    if (phone.length > 11) return setError(t("電話番号の桁数をご確認ください"));
     setBusy(true);
     try {
       const started = await entra.signUpStart(email.trim(), password);
@@ -261,7 +263,7 @@ export default function RegisterScreen() {
       setCode("");
       go("code");
     } catch (e) {
-      setError(e instanceof entra.EntraError ? e.message : "登録を開始できませんでした。");
+      setError(e instanceof entra.EntraError ? e.message : t("登録を開始できませんでした。"));
     } finally {
       setBusy(false);
     }
@@ -271,7 +273,7 @@ export default function RegisterScreen() {
   const submitCode = async (entered?: string) => {
     const value = (entered ?? code).trim();
     setError(null);
-    if (value.length < codeLength) return setError("確認コードを入力してください");
+    if (value.length < codeLength) return setError(t("確認コードを入力してください"));
 
     setBusy(true);
     try {
@@ -295,7 +297,7 @@ export default function RegisterScreen() {
       }
       await finish(tokens.idToken, phone.trim());
     } catch (e) {
-      setError(e instanceof entra.EntraError ? e.message : "確認できませんでした。");
+      setError(e instanceof entra.EntraError ? e.message : t("確認できませんでした。"));
     } finally {
       setBusy(false);
     }
@@ -326,7 +328,7 @@ export default function RegisterScreen() {
       // 「いいえ」なら電話番号を送らない＝新しいお客様として登録する
       await finish(idToken, isMe ? phone.trim() : "");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "登録に失敗しました。");
+      setError(e instanceof ApiError ? e.message : t("登録に失敗しました。"));
     } finally {
       setBusy(false);
     }
@@ -342,6 +344,8 @@ export default function RegisterScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
         keyboardShouldPersistTaps="handled"
       >
+        {/* 言語の切り替え（2026-11-20）。切り替えると画面を組み直すので、入力前の最初の段階だけ出す */}
+        {stepIndex === 0 && <LangToggle compact />}
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
         {/* 進捗。細い線が伸びるだけにして、上部を重くしない */}
@@ -356,7 +360,7 @@ export default function RegisterScreen() {
               />
             </View>
             <Text style={styles.progressText}>
-              {stepIndex >= 0 ? `STEP ${stepIndex + 1} / ${FLOW.length}` : "あと少しです"}
+              {stepIndex >= 0 ? `STEP ${stepIndex + 1} / ${FLOW.length}` : t("あと少しです")}
             </Text>
           </View>
         )}
@@ -367,31 +371,25 @@ export default function RegisterScreen() {
           {step === "name" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={[styles.title, styles.titleAlone]}>カーケアセンター{"\n"}公式アプリへようこそ</Text>
+                <Text style={[styles.title, styles.titleAlone]}>{t("カーケアセンター")}{"\n"}{t("公式アプリへようこそ")}</Text>
               </Appear>
 
               <View style={styles.form}>
                 <Appear reduce={reduceMotion} index={1}>
-                  <Field label="お名前" required value={name} onChangeText={setName} autoComplete="name" />
+                  <Field label={t("お名前")} required value={name} onChangeText={setName} autoComplete="name" />
                 </Appear>
                 <Appear reduce={reduceMotion} index={2}>
-                  <Field label="フリガナ" value={nameKana} onChangeText={setNameKana} placeholder="例：ヤマダ タロウ" />
+                  <Field label={t("フリガナ")} value={nameKana} onChangeText={setNameKana} placeholder={t("例：ヤマダ タロウ")} />
                 </Appear>
               </View>
 
               {error && <Text style={styles.error}>{error}</Text>}
 
               <Appear reduce={reduceMotion} index={3}>
-                <Text style={styles.consent}>
-                  ご入力いただいた情報は、ご予約の受付・ご連絡、回数券やクーポンの管理に利用します。詳しくは
-                  <Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
-                    プライバシーポリシー
-                  </Text>
-                  をご覧ください。
-                </Text>
-                <GoldButton title="次へ" onPress={submitName} style={styles.button} />
+                <Text style={styles.consent}>{t("ご入力いただいた情報は、ご予約の受付・ご連絡、回数券やクーポンの管理に利用します。詳しくは")}<Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>{t("プライバシーポリシー")}</Text>{t("をご覧ください。")}</Text>
+                <GoldButton title={t("次へ")} onPress={submitName} style={styles.button} />
                 <TouchableOpacity onPress={() => router.replace("/(onboarding)/login")} style={styles.linkRow}>
-                  <Text style={styles.link}>すでにご登録済みの方はこちら</Text>
+                  <Text style={styles.link}>{t("すでにご登録済みの方はこちら")}</Text>
                 </TouchableOpacity>
               </Appear>
             </>
@@ -401,53 +399,49 @@ export default function RegisterScreen() {
           {step === "login" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>ログイン情報</Text>
-                <Text style={styles.lead}>
-                  次回からは、このメールアドレスとパスワードでログインしていただけます。
-                </Text>
+                <Text style={styles.title}>{t("ログイン情報")}</Text>
+                <Text style={styles.lead}>{t("次回からは、このメールアドレスとパスワードでログインしていただけます。")}</Text>
               </Appear>
 
               <View style={styles.form}>
                 <Appear reduce={reduceMotion} index={1}>
                   <Field
-                    label="メールアドレス"
+                    label={t("メールアドレス")}
                     required
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoComplete="email"
                     autoCapitalize="none"
-                    placeholder="例：you@example.com"
+                    placeholder={t("例：you@example.com")}
                   />
                 </Appear>
                 <Appear reduce={reduceMotion} index={2}>
                   <Field
-                    label="パスワード"
+                    label={t("パスワード")}
                     required
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                     autoComplete="new-password"
                     autoCapitalize="none"
-                    placeholder="8文字以上"
+                    placeholder={t("8文字以上")}
                   />
-                  <Text style={styles.fieldHint}>
-                    8文字以上で、大文字・小文字・数字・記号のうち3種類以上を含めてください。
-                  </Text>
+                  <Text style={styles.fieldHint}>{t("8文字以上で、大文字・小文字・数字・記号のうち3種類以上を含めてください。")}</Text>
                 </Appear>
                 <Appear reduce={reduceMotion} index={3}>
                   <Field
-                    label="パスワード（確認）"
+                    label={t("パスワード（確認）")}
                     required
                     value={password2}
                     onChangeText={setPassword2}
                     secureTextEntry
                     autoComplete="new-password"
                     autoCapitalize="none"
-                    placeholder="もう一度ご入力ください"
+                    placeholder={t("もう一度ご入力ください")}
                   />
                   {password2.length > 0 && password !== password2 ? (
-                    <Text style={styles.fieldWarn}>パスワードが一致しません</Text>
+                    <Text style={styles.fieldWarn}>{t("パスワードが一致しません")}</Text>
                   ) : null}
                 </Appear>
               </View>
@@ -455,9 +449,9 @@ export default function RegisterScreen() {
               {error && <Text style={styles.error}>{error}</Text>}
 
               <Appear reduce={reduceMotion} index={4}>
-                <GoldButton title="次へ" onPress={submitLogin} style={styles.button} />
+                <GoldButton title={t("次へ")} onPress={submitLogin} style={styles.button} />
                 <TouchableOpacity onPress={() => go("name", -1)} style={styles.linkRow}>
-                  <Text style={styles.link}>ひとつ前に戻る</Text>
+                  <Text style={styles.link}>{t("ひとつ前に戻る")}</Text>
                 </TouchableOpacity>
               </Appear>
             </>
@@ -467,32 +461,28 @@ export default function RegisterScreen() {
           {step === "info" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={[styles.title, styles.titleAlone]}>お客様情報</Text>
+                <Text style={[styles.title, styles.titleAlone]}>{t("お客様情報")}</Text>
               </Appear>
 
               <View style={styles.form}>
                 <Appear reduce={reduceMotion} index={1}>
                   <Field
-                    label="電話番号"
+                    label={t("電話番号")}
                     required
                     value={phone}
                     /* ハイフンは受けない。入れ方が人によって揺れるため、数字だけにする */
                     onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, "").slice(0, 11))}
                     keyboardType="number-pad"
                     autoComplete="tel"
-                    placeholder="例：09012345678（ハイフンなし）"
+                    placeholder={t("例：09012345678（ハイフンなし）")}
                   />
-                  <Text style={styles.fieldHint}>
-                    電話番号をご入力ください。以前からご利用いただいているお客様は、これまでのご利用履歴が引き継がれます。
-                  </Text>
+                  <Text style={styles.fieldHint}>{t("電話番号をご入力ください。以前からご利用いただいているお客様は、これまでのご利用履歴が引き継がれます。")}</Text>
                 </Appear>
 
                 {/* 誕生月（任意）。誕生日クーポンの配布に使う。日付は伺わない。 */}
                 <Appear reduce={reduceMotion} index={2}>
-                  <Text style={styles.monthLabel}>誕生月</Text>
-                  <Text style={styles.monthHint}>
-                    誕生月に使えるクーポンをお送りします。あとから変更はできません。
-                  </Text>
+                  <Text style={styles.monthLabel}>{t("誕生月")}</Text>
+                  <Text style={styles.monthHint}>{t("誕生月に使えるクーポンをお送りします。あとから変更はできません。")}</Text>
                   <View style={styles.monthRow}>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <TouchableOpacity
@@ -510,30 +500,22 @@ export default function RegisterScreen() {
                     入れておくと、毎回ご宛名をお伺いしなくて済む。 */}
                 <Appear reduce={reduceMotion} index={3}>
                   <Field
-                    label="会社名"
+                    label={t("会社名")}
                     value={companyName}
                     onChangeText={setCompanyName}
-                    placeholder="例：株式会社カーケアセンター"
+                    placeholder={t("例：株式会社カーケアセンター")}
                   />
-                  <Text style={styles.fieldHint}>
-                    領収書をご希望の方は、ご宛名にする会社名をご入力ください。
-                  </Text>
+                  <Text style={styles.fieldHint}>{t("領収書をご希望の方は、ご宛名にする会社名をご入力ください。")}</Text>
                 </Appear>
               </View>
 
               {error && <Text style={styles.error}>{error}</Text>}
 
               <Appear reduce={reduceMotion} index={4}>
-                <Text style={styles.consent}>
-                  「確認コードを受け取る」を押すと、
-                  <Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
-                    プライバシーポリシー
-                  </Text>
-                  に同意いただいたものとします。
-                </Text>
-                <GoldButton title="確認コードを受け取る" onPress={sendCode} loading={busy} style={styles.button} />
+                <Text style={styles.consent}>{t("「確認コードを受け取る」を押すと、")}<Text style={styles.consentLink} onPress={() => Linking.openURL(PRIVACY_URL)}>{t("プライバシーポリシー")}</Text>{t("に同意いただいたものとします。")}</Text>
+                <GoldButton title={t("確認コードを受け取る")} onPress={sendCode} loading={busy} style={styles.button} />
                 <TouchableOpacity onPress={() => go("login", -1)} style={styles.linkRow} disabled={busy}>
-                  <Text style={styles.link}>ひとつ前に戻る</Text>
+                  <Text style={styles.link}>{t("ひとつ前に戻る")}</Text>
                 </TouchableOpacity>
               </Appear>
             </>
@@ -543,10 +525,8 @@ export default function RegisterScreen() {
           {step === "code" && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>確認コードの入力</Text>
-                <Text style={styles.lead}>
-                  {sentTo} 宛に{codeLength}桁の確認コードをお送りしました。{"\n"}メールをご確認のうえ、ご入力ください。
-                </Text>
+                <Text style={styles.title}>{t("確認コードの入力")}</Text>
+                <Text style={styles.lead}>{t("{sentTo} 宛に{codeLength}桁の確認コードをお送りしました。\nメールをご確認のうえ、ご入力ください。", { sentTo: sentTo, codeLength: codeLength })}</Text>
               </Appear>
 
               <Appear reduce={reduceMotion} index={1}>
@@ -563,11 +543,11 @@ export default function RegisterScreen() {
               {error && <Text style={styles.error}>{error}</Text>}
 
               <Appear reduce={reduceMotion} index={2}>
-                <GoldButton title="登録を完了する" onPress={() => submitCode()} loading={busy} style={styles.button} />
+                <GoldButton title={t("登録を完了する")} onPress={() => submitCode()} loading={busy} style={styles.button} />
                 <TouchableOpacity onPress={() => go("info", -1)} style={styles.linkRow} disabled={busy}>
-                  <Text style={styles.link}>入力内容を修正する</Text>
+                  <Text style={styles.link}>{t("入力内容を修正する")}</Text>
                 </TouchableOpacity>
-                <Text style={styles.note}>メールが届かない場合は、迷惑メールフォルダをご確認ください。</Text>
+                <Text style={styles.note}>{t("メールが届かない場合は、迷惑メールフォルダをご確認ください。")}</Text>
               </Appear>
             </>
           )}
@@ -576,31 +556,29 @@ export default function RegisterScreen() {
           {step === "confirm" && candidate && (
             <>
               <Appear reduce={reduceMotion} index={0}>
-                <Text style={styles.title}>ご本人の確認</Text>
-                <Text style={styles.lead}>ご入力いただいた電話番号で、当店にご登録がございました。</Text>
+                <Text style={styles.title}>{t("ご本人の確認")}</Text>
+                <Text style={styles.lead}>{t("ご入力いただいた電話番号で、当店にご登録がございました。")}</Text>
               </Appear>
 
               <Appear reduce={reduceMotion} index={1}>
                 <View style={styles.card}>
-                  <Text style={styles.cardName}>{candidate.name} 様</Text>
+                  <Text style={styles.cardName}>{t("{name} 様", { name: candidate.name })}</Text>
                   {!!candidate.phoneMasked && <Text style={styles.cardPhone}>{candidate.phoneMasked}</Text>}
                 </View>
-                <Text style={styles.note}>
-                  「はい」を選ぶと、これまでのご来店履歴やお車の情報が引き継がれます。
-                </Text>
+                <Text style={styles.note}>{t("「はい」を選ぶと、これまでのご来店履歴やお車の情報が引き継がれます。")}</Text>
               </Appear>
 
               {error && <Text style={styles.error}>{error}</Text>}
 
               <Appear reduce={reduceMotion} index={2}>
                 <GoldButton
-                  title="はい、私です"
+                  title={t("はい、私です")}
                   onPress={() => confirmCandidate(true)}
                   loading={busy}
                   style={styles.button}
                 />
                 <TouchableOpacity onPress={() => confirmCandidate(false)} style={styles.linkRow} disabled={busy}>
-                  <Text style={styles.link}>いいえ、違います（新規として登録）</Text>
+                  <Text style={styles.link}>{t("いいえ、違います（新規として登録）")}</Text>
                 </TouchableOpacity>
               </Appear>
             </>
@@ -732,8 +710,8 @@ function DoneMark({ name, reduce }: { name: string; reduce: boolean }) {
         resizeMode="contain"
       />
       <Animated.View style={{ opacity: fade }}>
-        <Text style={styles.title}>ご登録ありがとうございます</Text>
-        <Text style={styles.lead}>{name ? `${name} 様、` : ""}これからよろしくお願いいたします。</Text>
+        <Text style={styles.title}>{t("ご登録ありがとうございます")}</Text>
+        <Text style={styles.lead}>{name ? t("{name} 様、これからよろしくお願いいたします。", { name }) : t("これからよろしくお願いいたします。")}</Text>
       </Animated.View>
     </View>
   );
@@ -766,7 +744,7 @@ export function Field({
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
         {label}
-        {required && <Text style={styles.required}> 必須</Text>}
+        {required && <Text style={styles.required}>{t(" 必須")}</Text>}
       </Text>
       <TextInput
         style={styles.input}

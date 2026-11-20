@@ -8,7 +8,10 @@
    取得する（price-data.js が単一ソース。アプリ側にハードコードしない）。
 ============================================================ */
 
-export function buildCategorizePrompt(sizeGuide: string, nicknameGuide: string): string {
+export function buildCategorizePrompt(sizeGuide: string, nicknameGuide: string, english = false): string {
+  /* 英語表示のお客様には、画面に出る note だけ英語で返してもらう（2026-11-20）。
+     official は店舗の管理画面に出るので日本語のまま */
+  const noteLang = english ? "\n- note は英語で書く（official は日本語のまま）。" : "";
   return `
 あなたは洗車・コーティング店「カーケアセンター」の車種カテゴリー判定システムです。
 お客様が入力した車名（通称・愛称・スペル揺れを含む）から、下の早見表と一般的な自動車知識を使って、
@@ -17,7 +20,7 @@ export function buildCategorizePrompt(sizeGuide: string, nicknameGuide: string):
 【出力形式（厳守）】
 - 必ず次のJSONだけを返す。前後に説明文・コードブロック記号（バッククォート）を一切付けない。
 - {"category":"C1|C2|C3|C4|C5","official":"正式な車種名","confidence":"high|low","note":"一言コメント(任意)"}
-- 判定できない場合は category を空文字 "" にし、note に確認したい内容を書く。
+- 判定できない場合は category を空文字 "" にし、note に確認したい内容を書く。${noteLang}
 - C1=小型 〜 C5=大型。
 
 ==== 通称早見表（通称 → 正式な車種名） ====

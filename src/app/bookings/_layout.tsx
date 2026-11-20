@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { StyleSheet } from "react-native";
 import { colors, fonts } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 export default function BookingsLayout() {
@@ -35,7 +36,7 @@ export default function BookingsLayout() {
       onPress={goBack}
       hitSlop={HIT_SLOP}
       style={styles.back}
-      accessibilityLabel="前の画面に戻る"
+      accessibilityLabel={t("前の画面に戻る")}
     >
       <Feather name="chevron-left" size={26} color={colors.text} />
     </TouchableOpacity>
@@ -51,8 +52,8 @@ export default function BookingsLayout() {
         headerLeft: backButton,
       }}
     >
-      <Stack.Screen name="index" options={{ title: "ご利用履歴" }} />
-      <Stack.Screen name="[id]" options={{ title: "予約詳細" }} />
+      <Stack.Screen name="index" options={{ title: t("ご利用履歴") }} />
+      <Stack.Screen name="[id]" options={{ title: t("予約詳細") }} />
     </Stack>
   );
 }

@@ -38,6 +38,8 @@ export interface Customer {
 
 export interface MenuOption {
   label: string;
+  /** 英語表示用（2026-11-20）。送る値は label のまま */
+  labelEn?: string;
   price: number;
   perUnit?: boolean;
   unitLabel?: string;
@@ -47,6 +49,10 @@ export interface MenuItem {
   id: string;
   name: string;
   note?: string;
+  /** 英語表示用（2026-11-20）。予約で送る name は日本語のまま */
+  nameEn?: string;
+  noteEn?: string;
+  durationTextEn?: string;
   priceType: "category" | "options" | "quote";
   durationMin: number | null;
   durationText?: string;
@@ -61,6 +67,9 @@ export interface MenuGroup {
   id: string;
   name: string;
   note?: string;
+  /** 英語表示用（2026-11-20） */
+  nameEn?: string;
+  noteEn?: string;
   single?: boolean;
   detailPage?: string;
   items: MenuItem[];

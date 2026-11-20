@@ -54,6 +54,7 @@ import {
 } from "@/lib/api";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 export default function VehiclesScreen() {
@@ -86,7 +87,7 @@ export default function VehiclesScreen() {
     try {
       apply(await fetchMyVehicles());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "車両の情報を取得できませんでした。");
+      setError(e instanceof ApiError ? e.message : t("車両の情報を取得できませんでした。"));
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ export default function VehiclesScreen() {
     try {
       apply(await fn());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "更新できませんでした。");
+      setError(e instanceof ApiError ? e.message : t("更新できませんでした。"));
     } finally {
       setBusy(false);
     }
@@ -110,18 +111,18 @@ export default function VehiclesScreen() {
 
   const onRemove = (v: Vehicle) => {
     Alert.alert(
-      "この車両を削除しますか",
-      `${v.title}\n\n店舗でのご来店の記録は消えません。`,
+      t("この車両を削除しますか"),
+      t("{title}\n\n店舗でのご来店の記録は消えません。", { title: v.title }),
       [
-        { text: "やめる", style: "cancel" },
-        { text: "削除", style: "destructive", onPress: () => run(() => unselectVehicle(v.id)) },
+        { text: t("やめる"), style: "cancel" },
+        { text: t("削除"), style: "destructive", onPress: () => run(() => unselectVehicle(v.id)) },
       ]
     );
   };
 
   const onAdd = async () => {
     if (!maker.trim() && !model.trim()) {
-      setError("メーカーまたは車種をご入力ください。");
+      setError(t("メーカーまたは車種をご入力ください。"));
       return;
     }
     await run(() =>
@@ -138,10 +139,10 @@ export default function VehiclesScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
+        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel={t("前の画面に戻る")}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>車両の登録</Text>
+        <Text style={styles.headerTitle}>{t("車両の登録")}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -155,11 +156,9 @@ export default function VehiclesScreen() {
         ) : (
           <>
             {/* ---------- 所有している車両 ---------- */}
-            <Text style={styles.sectionTitle}>所有している車両</Text>
+            <Text style={styles.sectionTitle}>{t("所有している車両")}</Text>
             {selected.length === 0 ? (
-              <Text style={styles.empty}>
-                まだご登録がありません。{"\n"}下から選ぶか、新しく追加してください。
-              </Text>
+              <Text style={styles.empty}>{t("まだご登録がありません。")}{"\n"}{t("下から選ぶか、新しく追加してください。")}</Text>
             ) : (
               selected.map((v) => (
                 <Card key={v.id} style={styles.card}>
@@ -170,7 +169,7 @@ export default function VehiclesScreen() {
                       {v.color ? <Text style={styles.cardSub}>{v.color}</Text> : null}
                     </View>
                     <TouchableOpacity onPress={() => onRemove(v)} hitSlop={HIT_SLOP} disabled={busy}>
-                      <Text style={styles.remove}>削除</Text>
+                      <Text style={styles.remove}>{t("削除")}</Text>
                     </TouchableOpacity>
                   </View>
                 </Card>
@@ -180,53 +179,49 @@ export default function VehiclesScreen() {
             {/* ---------- 新しく追加 ---------- */}
             {adding ? (
               <Card style={styles.card}>
-                <Text style={styles.fieldLabel}>メーカー</Text>
+                <Text style={styles.fieldLabel}>{t("メーカー")}</Text>
                 <TextInput
                   style={styles.input}
                   value={maker}
                   onChangeText={setMaker}
-                  placeholder="例：トヨタ"
+                  placeholder={t("例：トヨタ")}
                   placeholderTextColor={colors.textLight}
                 />
-                <Text style={styles.fieldLabel}>車種</Text>
+                <Text style={styles.fieldLabel}>{t("車種")}</Text>
                 <TextInput
                   style={styles.input}
                   value={model}
                   onChangeText={setModel}
-                  placeholder="例：ハリアー"
+                  placeholder={t("例：ハリアー")}
                   placeholderTextColor={colors.textLight}
                 />
-                <Text style={styles.fieldLabel}>ボディカラー</Text>
+                <Text style={styles.fieldLabel}>{t("ボディカラー")}</Text>
                 <TextInput
                   style={styles.input}
                   value={color}
                   onChangeText={setColor}
-                  placeholder="例：パールホワイト"
+                  placeholder={t("例：パールホワイト")}
                   placeholderTextColor={colors.textLight}
                 />
-                <Text style={styles.formNote}>
-                  ナンバーはご来店時に店舗で確認いたしますので、ご入力は不要です。
-                </Text>
+                <Text style={styles.formNote}>{t("ナンバーはご来店時に店舗で確認いたしますので、ご入力は不要です。")}</Text>
 
-                <GoldButton title="追加する" onPress={onAdd} loading={busy} style={styles.addButton} />
+                <GoldButton title={t("追加する")} onPress={onAdd} loading={busy} style={styles.addButton} />
                 <TouchableOpacity onPress={() => { clearForm(); setAdding(false); }} style={styles.linkRow}>
-                  <Text style={styles.link}>やめる</Text>
+                  <Text style={styles.link}>{t("やめる")}</Text>
                 </TouchableOpacity>
               </Card>
             ) : (
               <TouchableOpacity style={styles.addRow} onPress={() => setAdding(true)} disabled={busy}>
                 <Feather name="plus" size={18} color={colors.goldDeep} />
-                <Text style={styles.addText}>車両を追加する</Text>
+                <Text style={styles.addText}>{t("車両を追加する")}</Text>
               </TouchableOpacity>
             )}
 
             {/* ---------- 履歴から選ぶ ---------- */}
             {history.length > 0 ? (
               <>
-                <Text style={[styles.sectionTitle, styles.sectionGap]}>ご来店の記録から選ぶ</Text>
-                <Text style={styles.sectionHint}>
-                  これまでにご来店いただいた車両です。いま所有されているものをお選びください。
-                </Text>
+                <Text style={[styles.sectionTitle, styles.sectionGap]}>{t("ご来店の記録から選ぶ")}</Text>
+                <Text style={styles.sectionHint}>{t("これまでにご来店いただいた車両です。いま所有されているものをお選びください。")}</Text>
                 {history.map((v) => (
                   <TouchableOpacity key={v.id} onPress={() => run(() => selectVehicle(v.id))} disabled={busy}>
                     <Card style={styles.card}>
@@ -235,7 +230,7 @@ export default function VehiclesScreen() {
                           <Text style={styles.cardTitle}>{v.title}</Text>
                           {v.plate ? <Text style={styles.cardSub}>{v.plate}</Text> : null}
                           {v.last_visited_on ? (
-                            <Text style={styles.cardMeta}>最終ご来店 {v.last_visited_on}</Text>
+                            <Text style={styles.cardMeta}>{t("最終ご来店 {last_visited_on}", { last_visited_on: v.last_visited_on })}</Text>
                           ) : null}
                         </View>
                         <Feather name="plus-circle" size={22} color={colors.gold} />

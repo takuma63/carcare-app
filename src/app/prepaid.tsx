@@ -20,6 +20,8 @@ import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 import type { PrepaidEntry } from "@/lib/types";
 
+import { t, tServer } from "@/lib/i18n";
+import { shopLabel } from "@/lib/shops";
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
 function yen(n: number): string {
@@ -36,19 +38,19 @@ function HistoryRow({ entry }: { entry: PrepaidEntry }) {
   return (
     <View style={[styles.row, entry.voided && styles.rowVoided]}>
       <View style={styles.rowMain}>
-        <Text style={styles.rowLabel}>{entry.label}</Text>
+        <Text style={styles.rowLabel}>{tServer(entry.label)}</Text>
         <Text style={styles.rowSub}>
           {formatDate(entry.created_at)}
-          {entry.shop ? `　${entry.shop}` : ""}
-          {entry.voided ? "　取り消し済み" : ""}
+          {entry.shop ? `　${shopLabel(entry.shop)}` : ""}
+          {entry.voided ? t("　取り消し済み") : ""}
         </Text>
       </View>
       <View style={styles.rowRight}>
         <Text style={[styles.rowAmount, plus ? styles.rowPlus : styles.rowMinus]}>
-          {plus ? "＋" : "−"}
+          {plus ? t("＋") : "−"}
           {yen(entry.amount)}
         </Text>
-        <Text style={styles.rowBalance}>残高 {yen(entry.balance_after)}</Text>
+        <Text style={styles.rowBalance}>{t("残高 {amount}", { amount: yen(entry.balance_after) })}</Text>
       </View>
     </View>
   );
@@ -70,7 +72,7 @@ export default function PrepaidScreen() {
       setHistory(d.history);
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "残高を取得できませんでした");
+      setError(e instanceof ApiError ? e.message : t("残高を取得できませんでした"));
     }
   }, []);
 
@@ -87,10 +89,10 @@ export default function PrepaidScreen() {
   return (
     <View style={styles.flex}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
+        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel={t("前の画面に戻る")}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>回数券</Text>
+        <Text style={styles.headerTitle}>{t("回数券")}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -99,18 +101,16 @@ export default function PrepaidScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
       >
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>ご利用いただける残高</Text>
+          <Text style={styles.balanceLabel}>{t("ご利用いただける残高")}</Text>
           <Text style={styles.balanceValue}>{loading ? "—" : yen(balance ?? 0)}</Text>
-          <Text style={styles.balanceNote}>
-            ご来店時に、店舗でこの残高からお支払いいただけます。
-          </Text>
+          <Text style={styles.balanceNote}>{t("ご来店時に、店舗でこの残高からお支払いいただけます。")}</Text>
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Text style={styles.sectionTitle}>ご利用の履歴</Text>
+        <Text style={styles.sectionTitle}>{t("ご利用の履歴")}</Text>
         {loading ? (
-          <Text style={styles.muted}>読み込み中…</Text>
+          <Text style={styles.muted}>{t("読み込み中…")}</Text>
         ) : history.length ? (
           <View style={styles.list}>
             {history.map((e) => (
@@ -118,12 +118,10 @@ export default function PrepaidScreen() {
             ))}
           </View>
         ) : (
-          <Text style={styles.muted}>まだご利用の履歴はありません。</Text>
+          <Text style={styles.muted}>{t("まだご利用の履歴はありません。")}</Text>
         )}
 
-        <Text style={styles.footNote}>
-          回数券のご購入は店舗で承っております。残高に有効期限はありません。
-        </Text>
+        <Text style={styles.footNote}>{t("回数券のご購入は店舗で承っております。残高に有効期限はありません。")}</Text>
       </ScrollView>
     </View>
   );

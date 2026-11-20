@@ -30,6 +30,7 @@ import { registerForPushNotifications } from "@/lib/push";
 import { spacing } from "@/theme";
 import { Field, styles } from "./register";
 
+import { t } from "@/lib/i18n";
 type Step = "email" | "code";
 
 export default function ResetScreen() {
@@ -49,7 +50,7 @@ export default function ResetScreen() {
   /* ---------- ① メールアドレス → 確認コードの送信 ---------- */
   const sendCode = async () => {
     setError(null);
-    if (!email.trim()) return setError("メールアドレスを入力してください");
+    if (!email.trim()) return setError(t("メールアドレスを入力してください"));
 
     setBusy(true);
     try {
@@ -58,7 +59,7 @@ export default function ResetScreen() {
       setSentTo(sent.target || email.trim());
       setStep("code");
     } catch (e) {
-      setError(e instanceof entra.EntraError ? e.message : "確認コードを送れませんでした。");
+      setError(e instanceof entra.EntraError ? e.message : t("確認コードを送れませんでした。"));
     } finally {
       setBusy(false);
     }
@@ -67,8 +68,8 @@ export default function ResetScreen() {
   /* ---------- ② 確認コード＋新しいパスワード ---------- */
   const submitNewPassword = async () => {
     setError(null);
-    if (!code.trim()) return setError("確認コードを入力してください");
-    if (password.length < 8) return setError("パスワードは8文字以上でご設定ください");
+    if (!code.trim()) return setError(t("確認コードを入力してください"));
+    if (password.length < 8) return setError(t("パスワードは8文字以上でご設定ください"));
 
     setBusy(true);
     try {
@@ -83,7 +84,7 @@ export default function ResetScreen() {
       registerForPushNotifications();
     } catch (e) {
       if (e instanceof entra.EntraError || e instanceof ApiError) setError(e.message);
-      else setError("パスワードを変更できませんでした。");
+      else setError(t("パスワードを変更できませんでした。"));
     } finally {
       setBusy(false);
     }
@@ -99,67 +100,63 @@ export default function ResetScreen() {
 
         {step === "email" && (
           <>
-            <Text style={styles.title}>パスワードの再設定</Text>
-            <Text style={styles.lead}>
-              ご登録のメールアドレスをご入力ください。確認コードをお送りします。
-            </Text>
+            <Text style={styles.title}>{t("パスワードの再設定")}</Text>
+            <Text style={styles.lead}>{t("ご登録のメールアドレスをご入力ください。確認コードをお送りします。")}</Text>
 
             <View style={styles.form}>
               <Field
-                label="メールアドレス"
+                label={t("メールアドレス")}
                 required
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoComplete="email"
                 autoCapitalize="none"
-                placeholder="例：you@example.com"
+                placeholder={t("例：you@example.com")}
               />
             </View>
 
             {error && <Text style={styles.error}>{error}</Text>}
 
-            <GoldButton title="確認コードを受け取る" onPress={sendCode} loading={busy} style={styles.button} />
+            <GoldButton title={t("確認コードを受け取る")} onPress={sendCode} loading={busy} style={styles.button} />
             <TouchableOpacity onPress={() => router.back()} style={styles.linkRow}>
-              <Text style={styles.link}>ログイン画面に戻る</Text>
+              <Text style={styles.link}>{t("ログイン画面に戻る")}</Text>
             </TouchableOpacity>
           </>
         )}
 
         {step === "code" && (
           <>
-            <Text style={styles.title}>新しいパスワード</Text>
-            <Text style={styles.lead}>
-              {sentTo} 宛に確認コードをお送りしました。{"\n"}コードと、新しいパスワードをご入力ください。
-            </Text>
+            <Text style={styles.title}>{t("新しいパスワード")}</Text>
+            <Text style={styles.lead}>{t("{sentTo} 宛に確認コードをお送りしました。\nコードと、新しいパスワードをご入力ください。", { sentTo: sentTo })}</Text>
 
             <View style={styles.form}>
               <Field
-                label="確認コード"
+                label={t("確認コード")}
                 required
                 value={code}
                 onChangeText={setCode}
                 keyboardType="number-pad"
                 autoComplete="one-time-code"
                 autoCapitalize="none"
-                placeholder="メールに記載の数字"
+                placeholder={t("メールに記載の数字")}
               />
               <Field
-                label="新しいパスワード"
+                label={t("新しいパスワード")}
                 required
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 autoComplete="new-password"
                 autoCapitalize="none"
-                placeholder="8文字以上"
+                placeholder={t("8文字以上")}
               />
             </View>
 
             {error && <Text style={styles.error}>{error}</Text>}
 
             <GoldButton
-              title="変更してログイン"
+              title={t("変更してログイン")}
               onPress={submitNewPassword}
               loading={busy}
               style={styles.button}
@@ -173,11 +170,9 @@ export default function ResetScreen() {
               }}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>メールアドレスを入力し直す</Text>
+              <Text style={styles.link}>{t("メールアドレスを入力し直す")}</Text>
             </TouchableOpacity>
-            <Text style={styles.note}>
-              メールが届かない場合は、迷惑メールフォルダをご確認ください。
-            </Text>
+            <Text style={styles.note}>{t("メールが届かない場合は、迷惑メールフォルダをご確認ください。")}</Text>
           </>
         )}
       </ScrollView>

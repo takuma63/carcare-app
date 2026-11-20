@@ -31,11 +31,11 @@ import { useReservation } from "@/lib/reservation-context";
 import { fetchAvailabilityMany, fetchStaffShifts, type AvailabilityDay, type NominationStaff, type SlotState } from "@/lib/api";
 import { staffPhoto } from "@/lib/staff-photos";
 import { ShopMap } from "@/components/ShopMap";
-import { ONLINE_SHOP_NAMES, findShop, isOnlineBookingShop, neighborShops } from "@/lib/shops";
+import { ONLINE_SHOP_NAMES, findShop, isOnlineBookingShop, neighborShops, shopLabel } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { fmtDate, pick, t, weekday, ymdToDate } from "@/lib/i18n";
 const STORE_NAMES = ONLINE_SHOP_NAMES;   // 予約できる店舗だけ（大元は src/lib/shops.ts）
-const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 const WEEK_DAYS = 7;
 /* ご予約を承る先の限度。Web予約（shop-data.js の bookingHorizonDate）と揃える */
 const HORIZON_MONTHS = 6;
@@ -186,7 +186,8 @@ export default function DateTimeScreen() {
   const isOffDay = (key: string) => offDays[key] === false;
 
   /* 画面に出すご指名スタッフのお名前 */
-  const nominatedStaffName = staffList.find((x) => x.id === nominatedStaffId)?.name ?? "";
+  const nominatedStaff = staffList.find((x) => x.id === nominatedStaffId);
+  const nominatedStaffName = nominatedStaff ? pick(nominatedStaff.name, nominatedStaff.nameEn) : "";
 
   /* ご指名をやめたら、固定していた時間も外す */
   const chooseNomMode = (mode: "yes" | "no") => {
@@ -236,7 +237,7 @@ export default function DateTimeScreen() {
         if (cancelled) return;
         setDays([]);
         setNearby([]);
-        setSlotError("空き状況を取得できませんでした。通信をご確認ください。");
+        setSlotError(t("空き状況を取得できませんでした。通信をご確認ください。"));
       })
       .finally(() => { if (!cancelled) setLoadingSlots(false); });
     return () => { cancelled = true; };
@@ -294,9 +295,9 @@ export default function DateTimeScreen() {
       <ReserveHeader />
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
         <StepIndicator current={1} />
-        <Text style={styles.heading}>店舗・日時を選択</Text>
+        <Text style={styles.heading}>{t("店舗・日時を選択")}</Text>
 
-        <Text style={styles.sectionLabel}>ご希望店舗</Text>
+        <Text style={styles.sectionLabel}>{t("ご希望店舗")}</Text>
         <View style={styles.storeList}>
           {STORE_NAMES.map((name) => (
             <TouchableOpacity
@@ -313,7 +314,7 @@ export default function DateTimeScreen() {
               }}
             >
               <View style={styles.storeBody}>
-                <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{name}</Text>
+                <Text style={[styles.storeName, shop === name && styles.storeNameOn]}>{shopLabel(name)}</Text>
               </View>
               {shop === name && <Feather name="check" size={18} color={colors.gold} />}
             </TouchableOpacity>
@@ -326,27 +327,27 @@ export default function DateTimeScreen() {
         {/* ご指名の有無。店舗の次に決めていただく（Web予約と同じ流れ） */}
         {!!shop && isNomShop && nom && (
           <View onLayout={onBlockLayout("nom")}>
-            <Text style={styles.sectionLabel}>スタッフのご指名</Text>
+            <Text style={styles.sectionLabel}>{t("スタッフのご指名")}</Text>
             <View style={styles.nomChoice}>
               <TouchableOpacity
                 style={[styles.nomCard, nomMode === "no" && styles.nomCardOn]}
                 onPress={() => { chooseNomMode("no"); goTo("cal"); }}
               >
-                <Text style={[styles.nomCardTitle, nomMode === "no" && styles.nomCardTitleOn]}>指名しない</Text>
-                <Text style={styles.nomCardDesc}>空いているお時間からお選びいただけます。</Text>
+                <Text style={[styles.nomCardTitle, nomMode === "no" && styles.nomCardTitleOn]}>{t("指名しない")}</Text>
+                <Text style={styles.nomCardDesc}>{t("空いているお時間からお選びいただけます。")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.nomCard, nomMode === "yes" && styles.nomCardOn]}
                 onPress={() => { chooseNomMode("yes"); goTo("nom"); }}
               >
-                <Text style={[styles.nomCardTitle, nomMode === "yes" && styles.nomCardTitleOn]}>スタッフを指名する</Text>
-                <Text style={styles.nomCardDesc}>指名料 ＋{yen(nom.fee)}／{nom.slotTime}〜の枠</Text>
+                <Text style={[styles.nomCardTitle, nomMode === "yes" && styles.nomCardTitleOn]}>{t("スタッフを指名する")}</Text>
+                <Text style={styles.nomCardDesc}>{t("指名料 ＋{amount}／{slotTime}〜の枠", { amount: yen(nom.fee), slotTime: nom.slotTime })}</Text>
               </TouchableOpacity>
             </View>
 
             {nomMode === "yes" && (
               <>
-                <Text style={styles.nomPick}>ご指名のスタッフをお選びください。</Text>
+                <Text style={styles.nomPick}>{t("ご指名のスタッフをお選びください。")}</Text>
                 <View style={styles.staffGrid}>
                   {staffList.map((st) => {
                     const active = nominatedStaffId === st.id;
@@ -357,8 +358,8 @@ export default function DateTimeScreen() {
                         onPress={() => { setNominatedStaffId(st.id); goTo("cal"); }}
                       >
                         <Image source={staffPhoto(st.id)} style={styles.staffPhoto} />
-                        <Text style={styles.staffName} numberOfLines={1}>{st.name}</Text>
-                        {!!st.role && <Text style={styles.staffRole} numberOfLines={1}>{st.role}</Text>}
+                        <Text style={styles.staffName} numberOfLines={1}>{pick(st.name, st.nameEn)}</Text>
+                        {!!st.role && <Text style={styles.staffRole} numberOfLines={1}>{pick(st.role, st.roleEn)}</Text>}
                         {active && (
                           <View style={styles.staffCheck}>
                             <Feather name="check" size={12} color={colors.white} />
@@ -403,20 +404,18 @@ export default function DateTimeScreen() {
             </View>
 
             {nomMode === "yes" && nominatedStaffName ? (
-              <Text style={styles.calLead}>
-                {nominatedStaffName} のご指名（{nom?.slotTime}〜）。出勤日からお選びください。
-              </Text>
+              <Text style={styles.calLead}>{t("{nominatedStaffName} のご指名（{slotTime}〜）。出勤日からお選びください。", { nominatedStaffName: nominatedStaffName, slotTime: nom?.slotTime })}</Text>
             ) : null}
 
             {loadingSlots && !days.length ? (
-              <Text style={styles.calMuted}>空き状況を読み込んでいます…</Text>
+              <Text style={styles.calMuted}>{t("空き状況を読み込んでいます…")}</Text>
             ) : slotError ? (
               <Text style={styles.calError}>{slotError}</Text>
             ) : !shownTimes.length ? (
               <Text style={styles.calMuted}>
                 {nomMode === "yes" && nom
-                  ? `${shop}では ${nom.slotTime} の枠をお取り扱いしておりません。`
-                  : "空き状況がありません。"}
+                  ? t("{shop}では {time} の枠をお取り扱いしておりません。", { shop: shopLabel(shop), time: nom.slotTime })
+                  : t("空き状況がありません。")}
               </Text>
             ) : (
               <View style={styles.cal}>
@@ -430,30 +429,30 @@ export default function DateTimeScreen() {
                         <Text style={[styles.calHeadDay,
                           d.weekday === 0 && styles.calSun, d.weekday === 6 && styles.calSat]}>{dd}</Text>
                         <Text style={[styles.calHeadWd,
-                          d.weekday === 0 && styles.calSun, d.weekday === 6 && styles.calSat]}>{WEEKDAY[d.weekday]}</Text>
+                          d.weekday === 0 && styles.calSun, d.weekday === 6 && styles.calSat]}>{weekday(d.weekday)}</Text>
                       </View>
                     );
                   })}
                 </View>
 
-                {shownTimes.map((t) => (
-                  <View key={t} style={styles.calRow}>
+                {shownTimes.map((tm) => (
+                  <View key={tm} style={styles.calRow}>
                     <View style={styles.calTimeCell}>
-                      <Text style={styles.calTimeText}>{t}</Text>
+                      <Text style={styles.calTimeText}>{tm}</Text>
                     </View>
                     {days.map((d) => {
                       // ご指名のとき、そのスタッフがお休みの日は選べない
                       if (nomMode === "yes" && isOffDay(d.date)) {
                         return (
                           <View key={d.date} style={styles.calCell}>
-                            <Text style={styles.calOff}>休</Text>
+                            <Text style={styles.calOff}>{t("休")}</Text>
                           </View>
                         );
                       }
-                      const st: SlotState = d.slots[t] ?? "closed";
+                      const st: SlotState = d.slots[tm] ?? "closed";
                       const within = new Date(d.date + "T00:00:00").getTime() <= limit.getTime();
                       const canPick = st === "open" && within;
-                      const chosen = preferredDate === d.date && preferredTime === t;
+                      const chosen = preferredDate === d.date && preferredTime === tm;
                       if (!canPick) {
                         return (
                           <View key={d.date} style={styles.calCell}>
@@ -465,8 +464,8 @@ export default function DateTimeScreen() {
                         <TouchableOpacity
                           key={d.date}
                           style={styles.calCell}
-                          onPress={() => pickSlot(d.date, t)}
-                          accessibilityLabel={`${d.date} ${t} を選ぶ`}
+                          onPress={() => pickSlot(d.date, tm)}
+                          accessibilityLabel={t("{date} {time} を選ぶ", { date: d.date, time: tm })}
                         >
                           <Text style={[styles.calMark, styles.mark_open, chosen && styles.calMarkOn]}>○</Text>
                         </TouchableOpacity>
@@ -479,12 +478,12 @@ export default function DateTimeScreen() {
 
             {/* 記号の意味。Webの凡例と同じ */}
             <View style={styles.legend}>
-              <Text style={styles.legendItem}><Text style={styles.mark_open}>○</Text> 予約できます</Text>
-              <Text style={styles.legendItem}><Text style={styles.mark_cutoff}>△</Text> Web受付は終了（お電話でご相談ください）</Text>
-              <Text style={styles.legendItem}><Text style={styles.mark_full}>×</Text> ご予約でいっぱいです</Text>
-              <Text style={styles.legendItem}><Text style={styles.mark_closed}>−</Text> 受付時間外</Text>
+              <Text style={styles.legendItem}><Text style={styles.mark_open}>○</Text>{t(" 予約できます")}</Text>
+              <Text style={styles.legendItem}><Text style={styles.mark_cutoff}>△</Text>{t(" Web受付は終了（お電話でご相談ください）")}</Text>
+              <Text style={styles.legendItem}><Text style={styles.mark_full}>×</Text>{t(" ご予約でいっぱいです")}</Text>
+              <Text style={styles.legendItem}><Text style={styles.mark_closed}>−</Text>{t(" 受付時間外")}</Text>
               {nomMode === "yes" && nominatedStaffName ? (
-                <Text style={styles.legendItem}>「休」は {nominatedStaffName} のお休みの日です</Text>
+                <Text style={styles.legendItem}>{t("「休」は {nominatedStaffName} のお休みの日です", { nominatedStaffName: nominatedStaffName })}</Text>
               ) : null}
             </View>
 
@@ -500,8 +499,8 @@ export default function DateTimeScreen() {
                 >
                   <Text style={styles.nearbyHeadText}>
                     {mine.open === 0
-                      ? `この一週間、${shop}は空きがありません。近くの店舗をご案内します`
-                      : "近くの店舗の空き状況を見る"}
+                      ? t("この一週間、{shop}は空きがありません。近くの店舗をご案内します", { shop: shopLabel(shop) })
+                      : t("近くの店舗の空き状況を見る")}
                   </Text>
                   <Feather
                     name={(nearbyOpen || nearbyAutoOpen) ? "chevron-up" : "chevron-down"}
@@ -520,21 +519,17 @@ export default function DateTimeScreen() {
                         activeOpacity={0.8}
                       >
                         <View style={styles.nearbyMain}>
-                          <Text style={styles.nearbyName}>{n.shop}</Text>
-                          {n.far ? <Text style={styles.nearbyFar}>横浜駅周辺から20〜30分</Text> : null}
-                          <Text style={styles.nearbySub}>
-                            この一週間の空き {n.sum.open} 枠
+                          <Text style={styles.nearbyName}>{shopLabel(n.shop)}</Text>
+                          {n.far ? <Text style={styles.nearbyFar}>{t("横浜駅周辺から20〜30分")}</Text> : null}
+                          <Text style={styles.nearbySub}>{t("この一週間の空き {open} 枠", { open: n.sum.open })}
                             {n.sum.first
-                              ? `　最短 ${Number(n.sum.first.date.slice(5, 7))}/${Number(n.sum.first.date.slice(8, 10))}（${WEEKDAY[n.sum.first.weekday]}）${n.sum.first.time}〜`
-                              : ""}
-                          </Text>
+                              ? "　" + t("最短 {date} {time}〜", { date: fmtDate(ymdToDate(n.sum.first.date), { year: false }), time: n.sum.first.time })
+                              : ""}</Text>
                         </View>
                         <Feather name="chevron-right" size={18} color={colors.gold} />
                       </TouchableOpacity>
                     ))}
-                    <Text style={styles.nearbyNote}>
-                      料金は店舗により異なる場合があります。お取り扱いのないメニューもございますので、次の画面でご確認ください。
-                    </Text>
+                    <Text style={styles.nearbyNote}>{t("料金は店舗により異なる場合があります。お取り扱いのないメニューもございますので、次の画面でご確認ください。")}</Text>
                   </View>
                 )}
               </View>
@@ -543,9 +538,7 @@ export default function DateTimeScreen() {
             {preferredDate && preferredTime ? (
               <View style={styles.picked}>
                 <Feather name="check-circle" size={16} color={colors.gold} />
-                <Text style={styles.pickedText}>
-                  {Number(preferredDate.slice(5, 7))}月{Number(preferredDate.slice(8, 10))}日 {preferredTime}〜 を選択中
-                </Text>
+                <Text style={styles.pickedText}>{t("{date} {time}〜 を選択中", { date: fmtDate(ymdToDate(preferredDate), { year: false }), time: preferredTime })}</Text>
               </View>
             ) : null}
           </>
@@ -554,7 +547,7 @@ export default function DateTimeScreen() {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <GoldButton title="次へ" onPress={() => router.push("/reserve/car")} disabled={!canProceed} />
+        <GoldButton title={t("次へ")} onPress={() => router.push("/reserve/car")} disabled={!canProceed} />
       </View>
     </View>
   );

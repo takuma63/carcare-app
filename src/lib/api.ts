@@ -12,6 +12,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { Booking, Coupon, Customer, MenuCategories, MenuGroup, PrepaidEntry, StampCard } from "./types";
+import { getLang, tServer } from "./i18n";
 
 const API_BASE = (Constants.expoConfig?.extra?.API_BASE as string | undefined) ?? "";
 
@@ -34,7 +35,8 @@ export class ApiError extends Error {
   /** サーバーが返したHTTPステータス。401（ログインが切れた）の判定に使う */
   readonly status?: number;
   constructor(message: string, status?: number) {
-    super(message);
+    // サーバー・アプリどちらの日本語の文言も、英語モードならここで英語にする（2026-11-20）
+    super(tServer(message));
     this.status = status;
   }
 }
@@ -335,6 +337,9 @@ export interface NominationStaff {
   id: string;
   name: string;
   role?: string;
+  /** 英語表示用（2026-11-20） */
+  nameEn?: string;
+  roleEn?: string;
   photo?: string;
   /** その方が立つ店舗。指名制度は各店の店長のみで運用する（2026-10-23） */
   shops?: string[];
@@ -345,6 +350,7 @@ export interface Nomination {
   slotTime: string;
   fee: number;
   staffLabel: string;
+  staffLabelEn?: string;
   staff?: NominationStaff[];
 }
 /* お支払い方法。大元は carcare-reservation/payment-data.js で、
@@ -573,5 +579,6 @@ export async function submitBooking(params: SubmitBookingParams) {
 
 /* ---------- push-register（Phase 4 で利用開始） ---------- */
 export function registerPushToken(expoPushToken: string, platform: "ios" | "android") {
-  return request<{ ok: true }>("push-register", { body: { expo_push_token: expoPushToken, platform } });
+  // lang：プッシュ通知の文面をこの言語で送ってもらう（2026-11-20）
+  return request<{ ok: true }>("push-register", { body: { expo_push_token: expoPushToken, platform, lang: getLang() } });
 }

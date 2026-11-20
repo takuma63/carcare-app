@@ -20,6 +20,7 @@
 ============================================================ */
 
 import type React from "react";
+import { t } from "./i18n";
 
 /** 決済シートの初期化・表示が返すエラー（本物と同じ形） */
 interface StripeError {
@@ -32,13 +33,11 @@ interface StripeResult {
   error?: StripeError;
 }
 
-const notAvailable: StripeResult = {
-  error: {
-    code: "Failed",
-    message: "ただいま事前決済をご利用いただけません。店頭でのお支払いをお願いいたします。",
-    localizedMessage: "ただいま事前決済をご利用いただけません。店頭でのお支払いをお願いいたします。",
-  },
-};
+/* 呼ばれた時点の言語で作る（英語表示 2026-11-20） */
+function notAvailable(): StripeResult {
+  const message = t("ただいま事前決済をご利用いただけません。店頭でのお支払いをお願いいたします。");
+  return { error: { code: "Failed", message, localizedMessage: message } };
+}
 
 interface ProviderProps {
   children?: React.ReactNode;
@@ -54,10 +53,10 @@ export function StripeProvider(props: ProviderProps) {
 export function useStripe() {
   return {
     async initPaymentSheet(_params?: Record<string, unknown>): Promise<StripeResult> {
-      return notAvailable;
+      return notAvailable();
     },
     async presentPaymentSheet(_params?: Record<string, unknown>): Promise<StripeResult> {
-      return notAvailable;
+      return notAvailable();
     },
   };
 }

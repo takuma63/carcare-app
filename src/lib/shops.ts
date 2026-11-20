@@ -9,8 +9,14 @@
    地図だけでは入口が分からないという理由で入れている。
 ============================================================ */
 
+import { isEn } from "./i18n";
+
 export type Shop = {
   name: string;
+  /* 英語表示用（2026-11-20）。予約で送る店舗名は name（日本語）のまま */
+  nameEn: string;
+  addressEn: string;
+  accessEn: string;
   zip: string;
   address: string;
   tel: string;
@@ -26,6 +32,9 @@ export type Shop = {
 export const SHOPS: Shop[] = [
   {
     name: "横浜ランドマークタワー店",
+    nameEn: "Yokohama Landmark Tower",
+    addressEn: "Landmark Tower Parking B1F, 2-2-1 Minatomirai, Nishi-ku, Yokohama, Kanagawa",
+    accessEn: "Landmark Tower parking, B1F. Enter from the tower parking entrance and go down to B1.",
     zip: "〒220-8190",
     address: "神奈川県横浜市西区みなとみらい2-2-1 横浜ランドマークタワー駐車場B1F",
     tel: "045-225-0118",
@@ -35,6 +44,9 @@ export const SHOPS: Shop[] = [
   },
   {
     name: "そごう横浜店",
+    nameEn: "Sogo Yokohama",
+    addressEn: "Sogo Parking Building 3F, 1-1 Kinkocho, Kanagawa-ku, Yokohama, Kanagawa",
+    accessEn: "Sogo Parking Building, 3F. Sogo's own car park at the east exit of Yokohama Station.",
     zip: "〒221-0056",
     address: "神奈川県横浜市神奈川区金港町1-1 そごうパーキング館3F",
     tel: "045-465-5599",
@@ -44,6 +56,9 @@ export const SHOPS: Shop[] = [
   },
   {
     name: "東戸塚オーロラシティ店",
+    nameEn: "Higashi-Totsuka Aurora City",
+    addressEn: "Seibu-kan Aurora Mall P2 Parking, 537-1 Shinanocho, Totsuka-ku, Yokohama, Kanagawa",
+    accessEn: "Seibu-kan Aurora Mall, P2 parking.",
     zip: "〒244-8530",
     address: "神奈川県横浜市戸塚区品濃町537-1 西武館オーロラモール P2駐車場",
     tel: "045-820-2855",
@@ -54,6 +69,9 @@ export const SHOPS: Shop[] = [
   },
   {
     name: "六本木ヒルズ店",
+    nameEn: "Roppongi Hills",
+    addressEn: "Roppongi Hills P2 Parking B3F, 6-10-1 Roppongi, Minato-ku, Tokyo",
+    accessEn: "Roppongi Hills P2 parking, B3F.",
     zip: "〒106-6190",
     address: "東京都港区六本木6-10-1 六本木ヒルズP2駐車場B3F",
     tel: "03-5772-0055",
@@ -63,6 +81,9 @@ export const SHOPS: Shop[] = [
   },
   {
     name: "銀座店",
+    nameEn: "Ginza",
+    addressEn: "Nishi-Ginza Parking B2F, 8-3 Ginza, Chuo-ku, Tokyo",
+    accessEn: "Nishi-Ginza Parking, B2F. Enter from the Sotobori-dori side.",
     zip: "〒104-0061",
     address: "東京都中央区銀座8丁目3番先 西銀座駐車場地下2F",
     tel: "03-3571-3581",
@@ -86,6 +107,20 @@ export function isOnlineBookingShop(name: string | null | undefined): boolean {
   return !ONLINE_BOOKING_SHOPS || ONLINE_BOOKING_SHOPS.includes(name as string);
 }
 export const ONLINE_SHOP_NAMES = SHOP_NAMES.filter((n) => isOnlineBookingShop(n));
+
+/* 画面に出す店舗名・住所・目印。英語モードなら英語（2026-11-20）。
+   知らない名前（そごう大宮店など管理画面だけの店舗）はそのまま返す */
+export function shopLabel(name: string | null | undefined): string {
+  if (!name) return "";
+  const s = findShop(name);
+  return s && isEn() ? s.nameEn : name;
+}
+export function shopAddress(s: Shop): string {
+  return isEn() ? s.addressEn : s.address;
+}
+export function shopAccess(s: Shop): string {
+  return isEn() ? s.accessEn : s.access;
+}
 
 export function findShop(name: string | null | undefined): Shop | null {
   if (!name) return null;

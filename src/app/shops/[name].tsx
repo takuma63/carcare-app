@@ -13,10 +13,11 @@ import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { ShopMap } from "@/components/ShopMap";
 import { GoldButton } from "@/components/GoldButton";
-import { findShop, shopMapLinkUrl } from "@/lib/shops";
+import { findShop, shopAccess, shopAddress, shopLabel, shopMapLinkUrl } from "@/lib/shops";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HOURS = "10:00〜19:00（平日・土日祝）";
 
 export default function ShopScreen() {
@@ -30,7 +31,7 @@ export default function ShopScreen() {
   if (!shop) {
     return (
       <View style={styles.center}>
-        <Text style={styles.missing}>店舗が見つかりませんでした。</Text>
+        <Text style={styles.missing}>{t("店舗が見つかりませんでした。")}</Text>
       </View>
     );
   }
@@ -41,22 +42,22 @@ export default function ShopScreen() {
   return (
     <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>Store</Text>
-      <Text style={styles.name}>{shop.name}</Text>
+      <Text style={styles.name}>{shopLabel(shop.name)}</Text>
 
       <View style={styles.map}>
         <ShopMap shopName={shop.name} mapOnly />
       </View>
 
       <View style={styles.info}>
-        <Row label="住所" value={`${shop.zip}\n${shop.address}`} />
-        <Row label="入口の目印" value={shop.access} />
-        <Row label="営業時間" value={HOURS} />
-        <Row label="電話番号" value={shop.tel} num />
+        <Row label={t("住所")} value={`${shop.zip}\n${shopAddress(shop)}`} />
+        <Row label={t("入口の目印")} value={shopAccess(shop)} />
+        <Row label={t("営業時間")} value={t(HOURS)} />
+        <Row label={t("電話番号")} value={shop.tel} num />
       </View>
 
       <View style={styles.actions}>
-        <GoldButton title={`電話する（${shop.tel}）`} icon="phone" onPress={call} />
-        <GoldButton title="経路を調べる" icon="map-pin" variant="secondary" onPress={route} />
+        <GoldButton title={t("電話する（{tel}）", { tel: shop.tel })} icon="phone" onPress={call} />
+        <GoldButton title={t("経路を調べる")} icon="map-pin" variant="secondary" onPress={route} />
       </View>
     </ScrollView>
   );

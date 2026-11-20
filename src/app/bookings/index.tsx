@@ -31,6 +31,8 @@ import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
 
+import { t } from "@/lib/i18n";
+import { shopLabel } from "@/lib/shops";
 /* 画面に並べる1件。並べ替えのために共通の日時（sortAt）を持たせる */
 type Entry =
   | { kind: "booking"; id: string; sortAt: number; booking: Booking }
@@ -51,7 +53,7 @@ export default function BookingsScreen() {
       setBookings(res.bookings ?? []);
       setVisits(res.visits ?? []);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "ご利用履歴の取得に失敗しました");
+      setError(e instanceof ApiError ? e.message : t("ご利用履歴の取得に失敗しました"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ export default function BookingsScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.muted}>読み込み中…</Text>
+        <Text style={styles.muted}>{t("読み込み中…")}</Text>
       </View>
     );
   }
@@ -100,9 +102,9 @@ export default function BookingsScreen() {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <Feather name="calendar" size={40} color={colors.gold} />
-        <Text style={styles.emptyTitle}>まだご利用の記録はありません</Text>
-        <Text style={styles.emptyText}>手洗い洗車・コーティングのご予約は{"\n"}こちらからどうぞ。</Text>
-        <GoldButton title="予約する" onPress={() => router.push("/reserve")} style={styles.emptyButton} />
+        <Text style={styles.emptyTitle}>{t("まだご利用の記録はありません")}</Text>
+        <Text style={styles.emptyText}>{t("手洗い洗車・コーティングのご予約は")}{"\n"}{t("こちらからどうぞ。")}</Text>
+        <GoldButton title={t("予約する")} onPress={() => router.push("/reserve")} style={styles.emptyButton} />
       </View>
     );
   }
@@ -125,7 +127,7 @@ export default function BookingsScreen() {
               </View>
               <Text style={styles.menu}>{primaryMenuName(item.booking)}</Text>
               <View style={styles.row}>
-                <Text style={styles.shop}>{item.booking.shop ?? "店頭にて調整"}</Text>
+                <Text style={styles.shop}>{item.booking.shop ? shopLabel(item.booking.shop) : t("店頭にて調整")}</Text>
                 <View style={styles.priceRow}>
                   <Text style={styles.price}>
                     {yen(item.booking.total_price - item.booking.discount_amount)}
@@ -139,10 +141,10 @@ export default function BookingsScreen() {
           <Card style={styles.card}>
             <View style={styles.row}>
               <Text style={styles.date}>{formatVisitDate(item.visit.visited_on)}</Text>
-              <Text style={styles.visitTag}>ご来店</Text>
+              <Text style={styles.visitTag}>{t("ご来店")}</Text>
             </View>
-            <Text style={styles.menu}>{item.visit.service_note ?? "ご来店"}</Text>
-            <Text style={styles.shop}>{item.visit.shop || "―"}</Text>
+            <Text style={styles.menu}>{item.visit.service_note ?? t("ご来店")}</Text>
+            <Text style={styles.shop}>{item.visit.shop ? shopLabel(item.visit.shop) : "―"}</Text>
           </Card>
         )
       }
@@ -152,9 +154,10 @@ export default function BookingsScreen() {
 
 function primaryMenuName(booking: Booking): string {
   const first = booking.items[0];
-  if (!first) return "メニュー未定";
+  if (!first) return t("メニュー未定");
   const rest = booking.items.length - 1;
-  return rest > 0 ? `${first.name} 他${rest}件` : first.name;
+  const name = t(first.name);
+  return rest > 0 ? t("{name} 他{rest}件", { name, rest }) : name;
 }
 
 function yen(amount: number): string {
@@ -175,9 +178,9 @@ function toTime(value: string | null): number {
 }
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "日時未定";
+  if (!iso) return t("日時未定");
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return "日時未定";
+  if (isNaN(d.getTime())) return t("日時未定");
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }

@@ -12,6 +12,7 @@ import { StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 export default function ShopsLayout() {
@@ -28,7 +29,7 @@ export default function ShopsLayout() {
       onPress={goBack}
       hitSlop={HIT_SLOP}
       style={styles.back}
-      accessibilityLabel="前の画面に戻る"
+      accessibilityLabel={t("前の画面に戻る")}
     >
       <Feather name="chevron-left" size={26} color={colors.text} />
     </TouchableOpacity>
@@ -44,7 +45,7 @@ export default function ShopsLayout() {
         headerLeft: backButton,
       }}
     >
-      <Stack.Screen name="[name]" options={{ title: "店舗のご案内" }} />
+      <Stack.Screen name="[name]" options={{ title: t("店舗のご案内") }} />
     </Stack>
   );
 }

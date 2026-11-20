@@ -25,6 +25,7 @@ import { ApiError, fetchMyAnnouncements, type Announcement } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 export default function AnnouncementsScreen() {
   const insets = useSafeAreaInsets();
 
@@ -40,7 +41,7 @@ export default function AnnouncementsScreen() {
       const r = await fetchMyAnnouncements();
       setItems(r.announcements);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "お知らせを取得できませんでした。");
+      setError(e instanceof ApiError ? e.message : t("お知らせを取得できませんでした。"));
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ export default function AnnouncementsScreen() {
   return (
     <View style={styles.flex}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <Text style={styles.headerTitle}>お知らせ</Text>
+        <Text style={styles.headerTitle}>{t("お知らせ")}</Text>
       </View>
 
       <ScrollView
@@ -83,10 +84,8 @@ export default function AnnouncementsScreen() {
         ) : items.length === 0 ? (
           <View style={styles.center}>
             <Feather name="bell" size={40} color={colors.gold} />
-            <Text style={styles.emptyTitle}>お知らせはありません</Text>
-            <Text style={styles.emptyText}>
-              キャンペーンや営業のご案内が届くと{"\n"}こちらに表示されます。
-            </Text>
+            <Text style={styles.emptyTitle}>{t("お知らせはありません")}</Text>
+            <Text style={styles.emptyText}>{t("キャンペーンや営業のご案内が届くと")}{"\n"}{t("こちらに表示されます。")}</Text>
           </View>
         ) : (
           items.map((a) => {
@@ -99,13 +98,13 @@ export default function AnnouncementsScreen() {
                 onPress={() => router.push(`/announcements/${a.id}`)}
                 activeOpacity={0.85}
                 style={[styles.card, unread && styles.cardUnread]}
-                accessibilityLabel={`${a.title} を開く`}
+                accessibilityLabel={t("{title} を開く", { title: a.title })}
               >
                 <View style={styles.cardHead}>
                   <Text style={styles.date}>{a.sent_on ?? ""}</Text>
                   {unread ? (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>未読</Text>
+                      <Text style={styles.badgeText}>{t("未読")}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -121,7 +120,7 @@ export default function AnnouncementsScreen() {
                 ) : null}
 
                 <View style={styles.more}>
-                  <Text style={styles.moreText}>詳しく見る</Text>
+                  <Text style={styles.moreText}>{t("詳しく見る")}</Text>
                   <Feather name="chevron-right" size={16} color={colors.goldDeep} />
                 </View>
               </TouchableOpacity>

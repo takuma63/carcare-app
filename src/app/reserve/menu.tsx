@@ -30,6 +30,8 @@ import { siteAssetUrl } from "@/lib/api";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 import type { MenuGroup, MenuItem } from "@/lib/types";
 
+import { isEn, pick, t } from "@/lib/i18n";
+import { shopLabel } from "@/lib/shops";
 /* オンライン予約では扱わないグループ（法人向け・要見積りのみ。reserve.jsのEXCLUDED_GROUP_IDSと同一） */
 const EXCLUDED_GROUP_IDS = ["mobile-wash"];
 /* メインメニューは「手洗い洗車」「コーティング」の2タブに分ける（Web版reserve.jsと同じ構成） */
@@ -92,13 +94,13 @@ export default function MenuSelectScreen() {
   };
 
   const renderPriceLabel = (item: MenuItem): string => {
-    if (item.priceType === "quote") return "要お見積り";
+    if (item.priceType === "quote") return t("要お見積り");
     if (item.priceType === "options") {
       const first = item.options?.[0];
       return first ? `${yen(first.price)}〜` : "";
     }
     if (item.priceType === "category") {
-      return category && item.prices ? yen(item.prices[category]) : "車種判定後に表示";
+      return category && item.prices ? yen(item.prices[category]) : t("車種判定後に表示");
     }
     return "";
   };
@@ -116,8 +118,8 @@ export default function MenuSelectScreen() {
           <View style={[styles.itemRow, styles.itemRowPhone]}>
             <View style={styles.itemBody}>
               <Text style={styles.itemName}>
-                {item.name}
-                {item.note ? <Text style={styles.itemNote}> {item.note}</Text> : null}
+                {pick(item.name, item.nameEn)}
+                {item.note ? <Text style={styles.itemNote}> {pick(item.note, item.noteEn)}</Text> : null}
               </Text>
             </View>
             <Text style={renderPriceLabel(item).startsWith("¥") ? styles.itemPrice : styles.itemPriceNote}>
@@ -136,8 +138,8 @@ export default function MenuSelectScreen() {
           ) : null}
           <View style={styles.itemBody}>
             <Text style={styles.itemName}>
-              {item.name}
-              {item.note ? <Text style={styles.itemNote}> {item.note}</Text> : null}
+              {pick(item.name, item.nameEn)}
+              {item.note ? <Text style={styles.itemNote}> {pick(item.note, item.noteEn)}</Text> : null}
             </Text>
           </View>
           {(() => {
@@ -156,10 +158,7 @@ export default function MenuSelectScreen() {
                 style={[styles.optionChip, sel.optionIndex === idx && styles.optionChipOn]}
                 onPress={() => setOptionIndex(item.id, idx)}
               >
-                <Text style={[styles.optionChipText, sel.optionIndex === idx && styles.optionChipTextOn]}>
-                  {opt.label}（{yen(opt.price)}
-                  {item.priceFrom ? "〜" : ""}）
-                </Text>
+                <Text style={[styles.optionChipText, sel.optionIndex === idx && styles.optionChipTextOn]}>{t("{label}（{amount}{v}）", { label: pick(opt.label, opt.labelEn), amount: yen(opt.price), v: item.priceFrom ? "〜" : "" })}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -174,12 +173,12 @@ export default function MenuSelectScreen() {
               <Text style={styles.qtyBtnText}>−</Text>
             </TouchableOpacity>
             <Text style={styles.qtyVal}>{sel.qty ?? 1}</Text>
-            <Text style={styles.qtyUnit}>{selectedOption?.unitLabel ?? ""}</Text>
+            <Text style={styles.qtyUnit}>{selectedOption?.unitLabel && !isEn() ? selectedOption.unitLabel : ""}</Text>
             <TouchableOpacity
               style={styles.qtyBtn}
               onPress={() => setQty(item.id, Math.min(10, (sel.qty ?? 1) + 1))}
             >
-              <Text style={styles.qtyBtnText}>＋</Text>
+              <Text style={styles.qtyBtnText}>{t("＋")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -194,7 +193,7 @@ export default function MenuSelectScreen() {
   const renderPhoneNotice = () => {
     const picked = findShop(shop);
     const tel = picked ? picked.tel : "06-6267-8288";
-    const label = picked ? picked.name : "代表";
+    const label = picked ? shopLabel(picked.name) : t("代表");
     return (
       <TouchableOpacity
         style={styles.phoneNotice}
@@ -203,11 +202,8 @@ export default function MenuSelectScreen() {
       >
         <Feather name="phone" size={16} color={colors.goldDeep} />
         <View style={styles.phoneNoticeBody}>
-          <Text style={styles.phoneNoticeText}>
-            こちらのメニューは、お車の状態を確認したうえでお日にちを調整させていただくため、
-            お電話でのご予約のみ承っております。
-          </Text>
-          <Text style={styles.phoneNoticeTel}>{tel}（{label}・受付 10:00〜19:00）</Text>
+          <Text style={styles.phoneNoticeText}>{t("こちらのメニューは、お車の状態を確認したうえでお日にちを調整させていただくため、 お電話でのご予約のみ承っております。")}</Text>
+          <Text style={styles.phoneNoticeTel}>{t("{tel}（{label}・受付 10:00〜19:00）", { tel: tel, label: label })}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -215,8 +211,8 @@ export default function MenuSelectScreen() {
 
   const renderGroup = (group: MenuGroup) => (
     <View key={group.id} style={styles.groupBlock}>
-      <Text style={styles.groupTitle}>{group.name}</Text>
-      {group.note && <Text style={styles.groupNote}>{group.note}</Text>}
+      <Text style={styles.groupTitle}>{pick(group.name, group.nameEn)}</Text>
+      {group.note && <Text style={styles.groupNote}>{pick(group.note, group.noteEn)}</Text>}
       {group.phoneOnly && renderPhoneNotice()}
       {group.items.map((item) => renderItem(item, group))}
     </View>
@@ -229,18 +225,18 @@ export default function MenuSelectScreen() {
       <View key={group.id} style={styles.accGroup}>
         <TouchableOpacity style={styles.accHeader} onPress={() => toggleOpen(group.id)}>
           <Feather name={isOpen ? "chevron-down" : "chevron-right"} size={18} color={colors.text} />
-          <Text style={styles.accTitle}>{group.name}</Text>
+          <Text style={styles.accTitle}>{pick(group.name, group.nameEn)}</Text>
           {hasSelection && <View style={styles.accDot} />}
-          <Text style={styles.accCount}>{group.items.length}メニュー</Text>
+          <Text style={styles.accCount}>{t("{length}メニュー", { length: group.items.length })}</Text>
         </TouchableOpacity>
         {isOpen && (
           <View style={styles.accBody}>
-            {group.note && <Text style={styles.groupNote}>{group.note}</Text>}
+            {group.note && <Text style={styles.groupNote}>{pick(group.note, group.noteEn)}</Text>}
             {group.phoneOnly && renderPhoneNotice()}
             {/* オプションは洗車メニューに追加していただくもの。
                 単体で予約を受けていると誤解されないよう、ここで伝える。 */}
             {!MAIN_GROUP_IDS.includes(group.id) && (
-              <Text style={styles.groupNote}>洗車メニューと一緒にご利用いただけます。</Text>
+              <Text style={styles.groupNote}>{t("洗車メニューと一緒にご利用いただけます。")}</Text>
             )}
             {group.items.map((item) => renderItem(item, group))}
           </View>
@@ -254,7 +250,7 @@ export default function MenuSelectScreen() {
       <ReserveHeader />
       <ScrollView contentContainerStyle={styles.content}>
         <StepIndicator current={3} />
-        <Text style={styles.heading}>メニューを選択</Text>
+        <Text style={styles.heading}>{t("メニューを選択")}</Text>
 
         <View style={styles.tabRow}>
           {(
@@ -268,7 +264,7 @@ export default function MenuSelectScreen() {
               style={[styles.tab, activeTab === tab.key && styles.tabOn]}
               onPress={() => handleTab(tab.key)}
             >
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextOn]}>{tab.label}</Text>
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextOn]}>{t(tab.label)}</Text>
               {hasSelectionIn([...tab.ids]) && <View style={styles.tabDot} />}
             </TouchableOpacity>
           ))}
@@ -276,23 +272,23 @@ export default function MenuSelectScreen() {
 
         {mainGroups.map(renderGroup)}
 
-        <Text style={styles.optionsLabel}>オプション（複数選択可）</Text>
+        <Text style={styles.optionsLabel}>{t("オプション（複数選択可）")}</Text>
         {subGroups.map(renderAccordionGroup)}
       </ScrollView>
 
       <View style={styles.bottomBar}>
         <View style={styles.bottomBarInfo}>
           <Text style={styles.bottomBarPrice}>
-            {summary.total > 0 ? yen(summary.total) + (summary.hasQuote ? " ＋ 要見積り" : "") : summary.hasQuote ? "要見積り" : "¥0"}
+            {summary.total > 0 ? yen(summary.total) + (summary.hasQuote ? t(" ＋ 要見積り") : "") : summary.hasQuote ? t("要見積り") : "¥0"}
           </Text>
           <Text style={styles.bottomBarTime}>
             {optionOnly
-              ? "洗車メニューをお選びください"
-              : `${selectionCount > 0 ? `${selectionCount}件選択中　` : ""}作業時間目安：${summary.durationText}`}
+              ? t("洗車メニューをお選びください")
+              : (selectionCount > 0 ? t("{n}件選択中", { n: selectionCount }) + "　" : "") + t("作業時間目安：{durationText}", { durationText: summary.durationText })}
           </Text>
         </View>
         <GoldButton
-          title="次へ"
+          title={t("次へ")}
           onPress={() => router.push("/reserve/confirm")}
           disabled={summary.isEmpty || optionOnly}
           style={styles.bottomBarButton}

@@ -15,6 +15,8 @@ import { useAuth } from "@/lib/auth-context";
 import { deleteMyAccount, ApiError } from "@/lib/api";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
+import { LangToggle } from "@/components/LangToggle";
 const PRIVACY_URL = "https://reserve.carcare-center.co.jp/privacy-app.html";
 
 export default function SettingsScreen() {
@@ -23,9 +25,9 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
 
   const handleSignOut = () => {
-    Alert.alert("ログアウトしますか？", "再度ご利用いただくには、お名前とご連絡先の再入力が必要です。", [
-      { text: "キャンセル", style: "cancel" },
-      { text: "ログアウト", style: "destructive", onPress: () => signOut() },
+    Alert.alert(t("ログアウトしますか？"), t("再度ご利用いただくには、お名前とご連絡先の再入力が必要です。"), [
+      { text: t("キャンセル"), style: "cancel" },
+      { text: t("ログアウト"), style: "destructive", onPress: () => signOut() },
     ]);
   };
 
@@ -36,19 +38,19 @@ export default function SettingsScreen() {
        誤操作が起きないよう、確認を2段階にしている。 */
   const handleDelete = () => {
     Alert.alert(
-      "アカウントを削除しますか？",
-      "アプリのログイン情報を削除します。\n\n" +
-        "回数券の残高・来店履歴・ご予約は、店舗のお取引記録として残ります。" +
-        "同じご連絡先で登録し直すと、再びアプリでご確認いただけます。",
+      t("アカウントを削除しますか？"),
+      t("アプリのログイン情報を削除します。\n\n") +
+        t("回数券の残高・来店履歴・ご予約は、店舗のお取引記録として残ります。") +
+        t("同じご連絡先で登録し直すと、再びアプリでご確認いただけます。"),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t("キャンセル"), style: "cancel" },
         {
-          text: "削除に進む",
+          text: t("削除に進む"),
           style: "destructive",
           onPress: () =>
-            Alert.alert("本当に削除しますか？", "この操作は取り消せません。", [
-              { text: "やめる", style: "cancel" },
-              { text: "削除する", style: "destructive", onPress: runDelete },
+            Alert.alert(t("本当に削除しますか？"), t("この操作は取り消せません。"), [
+              { text: t("やめる"), style: "cancel" },
+              { text: t("削除する"), style: "destructive", onPress: runDelete },
             ]),
         },
       ]
@@ -60,11 +62,11 @@ export default function SettingsScreen() {
     try {
       await deleteMyAccount();
       await forgetAccount();
-      Alert.alert("削除しました", "ご利用ありがとうございました。");
+      Alert.alert(t("削除しました"), t("ご利用ありがとうございました。"));
     } catch (e) {
       Alert.alert(
-        "削除できませんでした",
-        e instanceof ApiError ? e.message : "通信に失敗しました。時間をおいて再度お試しください。"
+        t("削除できませんでした"),
+        e instanceof ApiError ? e.message : t("通信に失敗しました。時間をおいて再度お試しください。")
       );
     } finally {
       setDeleting(false);
@@ -73,29 +75,31 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.sectionTitle}>プロフィール</Text>
+      <Text style={styles.sectionTitle}>{t("プロフィール")}</Text>
       <Card style={styles.card}>
-        <Row label="お名前" value={customer?.name ?? "—"} />
-        <Row label="電話番号" value={customer?.phone ?? "未登録"} />
-        <Row label="メールアドレス" value={customer?.email ?? "未登録"} />
+        <Row label={t("お名前")} value={customer?.name ?? "—"} />
+        <Row label={t("電話番号")} value={customer?.phone ?? t("未登録")} />
+        <Row label={t("メールアドレス")} value={customer?.email ?? t("未登録")} />
       </Card>
 
+      {/* 表示言語（2026-11-20）。見出しは両方の言語で出す（読めない言語のまま迷わないように） */}
+      <Text style={[styles.sectionTitle, styles.langTitle]}>言語 / Language</Text>
+      <LangToggle />
+
       <View style={styles.footer}>
-        <GoldButton title="ログアウト" variant="secondary" onPress={handleSignOut} />
+        <GoldButton title={t("ログアウト")} variant="secondary" onPress={handleSignOut} />
       </View>
 
       <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>
-        <Text style={styles.link}>プライバシーポリシー</Text>
+        <Text style={styles.link}>{t("プライバシーポリシー")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleDelete} disabled={deleting}>
         <Text style={[styles.danger, deleting && styles.dangerDisabled]}>
-          {deleting ? "削除しています…" : "アカウントを削除"}
+          {deleting ? t("削除しています…") : t("アカウントを削除")}
         </Text>
       </TouchableOpacity>
-      <Text style={styles.dangerNote}>
-        アプリのログイン情報のみを削除します。回数券の残高・来店履歴は店舗のお取引記録として残ります。
-      </Text>
+      <Text style={styles.dangerNote}>{t("アプリのログイン情報のみを削除します。回数券の残高・来店履歴は店舗のお取引記録として残ります。")}</Text>
     </ScrollView>
   );
 }
@@ -172,5 +176,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: spacing.xxl,
+  },
+  langTitle: {
+    marginTop: spacing.xl,
   },
 });

@@ -18,9 +18,10 @@ import React from "react";
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
-import { findShop, shopMapEmbedUrl, shopMapLinkUrl } from "@/lib/shops";
+import { findShop, shopMapEmbedUrl, shopMapLinkUrl, shopAddress, shopLabel } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 /* 埋め込み地図を入れるだけのHTML。iframeの中でないとGoogleが描画しない。 */
 function mapHtml(src: string): string {
   return `<!doctype html><html><head>
@@ -55,7 +56,7 @@ export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null
           startInLoadingState
           renderLoading={() => (
             <View style={styles.loading}>
-              <Text style={styles.loadingText}>地図を読み込んでいます…</Text>
+              <Text style={styles.loadingText}>{t("地図を読み込んでいます…")}</Text>
             </View>
           )}
         />
@@ -64,13 +65,13 @@ export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null
       {mapOnly ? null : (
       <>
       <Text style={styles.address}>
-        {shop.zip} {shop.address}
+        {shop.zip} {shopAddress(shop)}
       </Text>
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.action} onPress={openMaps}>
           <Feather name="map-pin" size={15} color={colors.goldDeep} />
-          <Text style={styles.actionText}>経路を調べる</Text>
+          <Text style={styles.actionText}>{t("経路を調べる")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.action}

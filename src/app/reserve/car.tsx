@@ -34,6 +34,7 @@ import { buildCategorizePrompt, parseJudge } from "@/lib/car-judge";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { isEn, t } from "@/lib/i18n";
 const CATEGORY_SUBS: Record<string, string> = { C1: "小型", C2: "", C3: "", C4: "", C5: "大型" };
 
 export default function CarInputScreen() {
@@ -86,17 +87,17 @@ export default function CarInputScreen() {
     setJudging(true);
     setJudgeNote(null);
     try {
-      const prompt = buildCategorizePrompt(menu.size_guide, menu.nickname_guide);
+      const prompt = buildCategorizePrompt(menu.size_guide, menu.nickname_guide, isEn());
       const res = await askAI(prompt, text);
       const raw = res.content?.[0]?.text ?? "";
       const parsed = parseJudge(raw);
       if (parsed && parsed.category) {
         applyJudgedCategory(parsed.official || text, parsed.category, parsed.confidence === "low" ? "low" : "high");
       } else {
-        setJudgeNote(parsed?.note || "自動判定できませんでした。下のカテゴリーを手動でお選びください。");
+        setJudgeNote(parsed?.note || t("自動判定できませんでした。下のカテゴリーを手動でお選びください。"));
       }
     } catch (e) {
-      setJudgeNote(e instanceof ApiError ? e.message : "通信エラーで自動判定できませんでした。下のカテゴリーを手動でお選びください。");
+      setJudgeNote(e instanceof ApiError ? e.message : t("通信エラーで自動判定できませんでした。下のカテゴリーを手動でお選びください。"));
     } finally {
       setJudging(false);
     }
@@ -135,7 +136,7 @@ export default function CarInputScreen() {
         <ReserveHeader showBack={false} />
         <View style={styles.center}>
           <Text style={styles.errorText}>{menuError}</Text>
-          <GoldButton title="再読み込み" onPress={loadMenu} style={styles.retryButton} />
+          <GoldButton title={t("再読み込み")} onPress={loadMenu} style={styles.retryButton} />
         </View>
       </View>
     );
@@ -148,17 +149,15 @@ export default function CarInputScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <StepIndicator current={2} />
 
-      <Text style={styles.heading}>お車の車種を{"\n"}教えてください</Text>
+      <Text style={styles.heading}>{t("お車の車種を")}{"\n"}{t("教えてください")}</Text>
 
       <Text style={styles.lead}>
-        <Text style={styles.leadStrong}>メーカー名から</Text>ご入力ください。
-        同じ車名でもメーカーによって大きさが異なるため、メーカー名があると正確に判定できます。
-      </Text>
+        <Text style={styles.leadStrong}>{t("メーカー名から")}</Text>{t("ご入力ください。 同じ車名でもメーカーによって大きさが異なるため、メーカー名があると正確に判定できます。")}</Text>
 
       {/* 登録済みのお車。押すだけで入力＋サイズの判定まで済む。 */}
       {myCars.length > 0 && (
         <View style={styles.myCars}>
-          <Text style={styles.myCarsLabel}>登録済みの車両から選ぶ</Text>
+          <Text style={styles.myCarsLabel}>{t("登録済みの車両から選ぶ")}</Text>
           {myCars.map((v) => {
             const text = [v.maker, v.model].filter(Boolean).join(" ").trim() || v.title;
             const picked = carInput.trim() === text;
@@ -179,14 +178,14 @@ export default function CarInputScreen() {
               </TouchableOpacity>
             );
           })}
-          <Text style={styles.myCarsNote}>別のお車の場合は、下に車種をご入力ください。</Text>
+          <Text style={styles.myCarsNote}>{t("別のお車の場合は、下に車種をご入力ください。")}</Text>
         </View>
       )}
 
       <TextInput
         value={carInput}
         onChangeText={setCarInput}
-        placeholder="例：メルセデス・ベンツ Gクラス"
+        placeholder={t("例：メルセデス・ベンツ Gクラス")}
         placeholderTextColor={colors.textLight}
         style={styles.input}
         onSubmitEditing={handleJudge}
@@ -195,7 +194,7 @@ export default function CarInputScreen() {
       />
 
       <View style={styles.examples}>
-        {["メルセデス・ベンツ Gクラス", "トヨタ アルファード", "ポルシェ 911"].map((ex) => (
+        {[t("メルセデス・ベンツ Gクラス"), t("トヨタ アルファード"), t("ポルシェ 911")].map((ex) => (
           <Text key={ex} style={styles.exampleChip}>{ex}</Text>
         ))}
       </View>
@@ -203,23 +202,22 @@ export default function CarInputScreen() {
       {judging && (
         <View style={styles.judgingRow}>
           <ActivityIndicator color={colors.gold} size="small" />
-          <Text style={styles.judgingText}>お車のサイズを判定しています…</Text>
+          <Text style={styles.judgingText}>{t("お車のサイズを判定しています…")}</Text>
         </View>
       )}
 
       {!judging && category && (
         <Card style={styles.resultCard}>
-          {official ? <Text style={styles.resultTag}>AI判定</Text> : null}
-          <Text style={styles.resultName}>{official || carInput || "お車"}</Text>
+          {official ? <Text style={styles.resultTag}>{t("AI判定")}</Text> : null}
+          {/* 英語表示では、AIの正式名（日本語）ではなくお客様の入力をそのまま出す */}
+          <Text style={styles.resultName}>{(isEn() ? carInput || official : official || carInput) || t("お車")}</Text>
           <Text style={styles.resultCategory}>
-            {menu?.categories[category] ?? category}
-            {confidence === "low" ? "（推定）" : ""}
+            {menu?.categories[category] ? t(menu.categories[category]) : category}
+            {confidence === "low" ? t("（推定）") : ""}
           </Text>
-          <Text style={styles.resultHint}>違う場合は下のボタンで修正できます。</Text>
+          <Text style={styles.resultHint}>{t("違う場合は下のボタンで修正できます。")}</Text>
           {confidence === "low" && (
-            <Text style={styles.resultAsk}>
-              メーカー名（例：トヨタ、BMW、メルセデス・ベンツ）も入れていただくと、より正確に判定できます。
-            </Text>
+            <Text style={styles.resultAsk}>{t("メーカー名（例：トヨタ、BMW、メルセデス・ベンツ）も入れていただくと、より正確に判定できます。")}</Text>
           )}
         </Card>
       )}
@@ -228,7 +226,7 @@ export default function CarInputScreen() {
         <Text style={styles.noteText}>{judgeNote}</Text>
       )}
 
-      <Text style={styles.categoryLabel}>カテゴリーを直接選ぶ</Text>
+      <Text style={styles.categoryLabel}>{t("カテゴリーを直接選ぶ")}</Text>
       <View style={styles.catRow}>
         {["C1", "C2", "C3", "C4", "C5"].map((cat) => (
           <TouchableOpacity
@@ -238,13 +236,13 @@ export default function CarInputScreen() {
           >
             <Text style={[styles.catBtnText, category === cat && styles.catBtnTextActive]}>{cat}</Text>
             <Text style={[styles.catBtnSub, category === cat && styles.catBtnTextActive]}>
-              {CATEGORY_SUBS[cat] || " "}
+              {CATEGORY_SUBS[cat] ? t(CATEGORY_SUBS[cat]) : " "}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-          <GoldButton title="次へ" onPress={handleNext} disabled={!category} style={styles.nextButton} />
+          <GoldButton title={t("次へ")} onPress={handleNext} disabled={!category} style={styles.nextButton} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

@@ -30,6 +30,8 @@ import { registerForPushNotifications } from "@/lib/push";
 import { spacing } from "@/theme";
 import { Field, styles } from "./register";
 
+import { t } from "@/lib/i18n";
+import { LangToggle } from "@/components/LangToggle";
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
@@ -42,8 +44,8 @@ export default function LoginScreen() {
 
   const submit = async () => {
     setError(null);
-    if (!email.trim()) return setError("メールアドレスを入力してください");
-    if (!password) return setError("パスワードを入力してください");
+    if (!email.trim()) return setError(t("メールアドレスを入力してください"));
+    if (!password) return setError(t("パスワードを入力してください"));
 
     setBusy(true);
     try {
@@ -54,7 +56,7 @@ export default function LoginScreen() {
       registerForPushNotifications();
     } catch (e) {
       if (e instanceof entra.EntraError || e instanceof ApiError) setError(e.message);
-      else setError("ログインできませんでした。時間をおいて再度お試しください。");
+      else setError(t("ログインできませんでした。時間をおいて再度お試しください。"));
     } finally {
       setBusy(false);
     }
@@ -66,24 +68,25 @@ export default function LoginScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
         keyboardShouldPersistTaps="handled"
       >
+        <LangToggle compact />
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
-        <Text style={styles.title}>ログイン</Text>
-        <Text style={styles.lead}>ご登録のメールアドレスとパスワードをご入力ください。</Text>
+        <Text style={styles.title}>{t("ログイン")}</Text>
+        <Text style={styles.lead}>{t("ご登録のメールアドレスとパスワードをご入力ください。")}</Text>
 
         <View style={styles.form}>
           <Field
-            label="メールアドレス"
+            label={t("メールアドレス")}
             required
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoComplete="email"
             autoCapitalize="none"
-            placeholder="例：you@example.com"
+            placeholder={t("例：you@example.com")}
           />
           <Field
-            label="パスワード"
+            label={t("パスワード")}
             required
             value={password}
             onChangeText={setPassword}
@@ -95,16 +98,16 @@ export default function LoginScreen() {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <GoldButton title="ログイン" onPress={submit} loading={busy} style={styles.button} />
+        <GoldButton title={t("ログイン")} onPress={submit} loading={busy} style={styles.button} />
 
         <TouchableOpacity onPress={() => router.push("/(onboarding)/reset")} style={styles.linkRow}>
-          <Text style={styles.link}>パスワードをお忘れの方</Text>
+          <Text style={styles.link}>{t("パスワードをお忘れの方")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.replace({ pathname: "/(onboarding)/register", params: { fresh: "1" } })}
           style={styles.linkRow}
         >
-          <Text style={styles.link}>はじめてご利用の方はこちら</Text>
+          <Text style={styles.link}>{t("はじめてご利用の方はこちら")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

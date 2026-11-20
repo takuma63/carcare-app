@@ -23,11 +23,13 @@ import {
   NotoSansJP_700Bold,
 } from "@expo-google-fonts/noto-sans-jp";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { LanguageProvider, useLang } from "@/lib/i18n";
 import { startAnalytics, track } from "@/lib/analytics";
 import { registerForPushNotifications } from "@/lib/push";
 import { Toast } from "@/components/Toast";
 import { colors } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const STRIPE_PUBLISHABLE_KEY = (Constants.expoConfig?.extra?.STRIPE_PUBLISHABLE_KEY as string | undefined) ?? "";
 
 function LoadingView() {
@@ -40,6 +42,7 @@ function LoadingView() {
 
 function RootNavigator() {
   const { token, isLoading } = useAuth();
+  const { lang } = useLang();
   const router = useRouter();
   const [toast, setToast] = useState<{ title: string; body: string; bookingId?: string; couponId?: string } | null>(
     null
@@ -48,9 +51,10 @@ function RootNavigator() {
 
   // 起動時（トークンが確定した時点）でプッシュ登録を再実行する
   // （初回登録時に拒否した後で端末設定から許可した場合の救済にもなる）
+  // 言語を切り替えたときも登録し直す（プッシュ通知の文面をその言語で送ってもらうため）
   useEffect(() => {
     if (token) registerForPushNotifications();
-  }, [token]);
+  }, [token, lang]);
 
   // フォアグラウンド受信：アプリ内トースト表示（SPEC.md §4.3）。タップで該当画面へ
   useEffect(() => {
@@ -59,7 +63,7 @@ function RootNavigator() {
       const data = content.data as { booking_id?: string; coupon_id?: string } | undefined;
       if (toastTimer.current) clearTimeout(toastTimer.current);
       setToast({
-        title: content.title ?? "カーケアセンター",
+        title: content.title ?? t("カーケアセンター"),
         body: content.body ?? "",
         bookingId: data?.booking_id,
         couponId: data?.coupon_id,
@@ -104,7 +108,8 @@ function RootNavigator() {
           onPress={toast.bookingId || toast.couponId ? handleToastPress : undefined}
         />
       )}
-      <Stack screenOptions={{ headerShown: false }}>
+      {/* key={lang}：言語を切り替えたら画面をまるごと組み直して、全部の文言に反映する */}
+      <Stack key={lang} screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!!token}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="reserve" options={{ presentation: "modal" }} />
@@ -158,9 +163,11 @@ export default function RootLayout() {
   if (!fontsReady) return <LoadingView />;
 
   const app = (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </LanguageProvider>
   );
 
   // Stripeキーが未設定の間はProviderなしで動かす（S6側で「今すぐ決済」が非活性になる）

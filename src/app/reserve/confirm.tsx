@@ -33,6 +33,8 @@ import type { Coupon } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { fmtDate, isEn, pick, t, tList } from "@/lib/i18n";
+import { shopLabel } from "@/lib/shops";
 const STRIPE_ENABLED = !!(Constants.expoConfig?.extra?.STRIPE_PUBLISHABLE_KEY as string | undefined);
 
 function yen(n: number): string {
@@ -44,10 +46,9 @@ function wait(ms: number): Promise<void> {
 }
 
 function formatDateTime(date: string | null, time: string | null): string {
-  if (!date || !time) return "店頭にて調整";
+  if (!date || !time) return t("店頭にて調整");
   const d = new Date(`${date}T${time}:00`);
-  const wd = ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${wd}）${time}〜`;
+  return fmtDate(d, { time: t("{time}〜", { time }) });
 }
 
 export default function ConfirmScreen() {
@@ -63,17 +64,18 @@ export default function ConfirmScreen() {
   const payOptions = menu?.payment_methods?.length
     ? menu.payment_methods
     : [
-        { id: "cash", name: "現金" },
-        { id: "credit", name: "クレジットカード" },
-        { id: "emoney", name: "電子マネー" },
-        { id: "prepaid", name: "回数券" },
+        { id: "cash", name: t("現金") },
+        { id: "credit", name: t("クレジットカード") },
+        { id: "emoney", name: t("電子マネー") },
+        { id: "prepaid", name: t("回数券") },
       ];
   const [storeMethod, setStoreMethod] = useState<string>("cash");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const order = buildOrder();
-  const categoryLabel = menu?.categories[category] ?? category;
+  const categoryLabel = menu?.categories[category] ? t(menu.categories[category]) : category;
+  const staffName = (st: { name: string; nameEn?: string }) => pick(st.name, st.nameEn);
 
   // 指名：対象店舗＋対象時刻＋スタッフを1名選んでいれば指名料が加算される
   const nom = menu?.nomination?.enabled ? menu.nomination : null;
@@ -165,7 +167,7 @@ export default function ConfirmScreen() {
 
     const init = await initPaymentSheet({
       paymentIntentClientSecret: client_secret,
-      merchantDisplayName: "カーケアセンター",
+      merchantDisplayName: t("カーケアセンター"),
       returnURL: "carcarecenter://stripe-redirect",
       // Apple Pay / Google Pay はEASビルド＋Merchant ID登録後に有効になる
       // （Expo Goではカード入力のみ表示される）。本番切替時は testEnv を false に
@@ -173,13 +175,13 @@ export default function ConfirmScreen() {
       googlePay: { merchantCountryCode: "JP", testEnv: true, currencyCode: "JPY" },
     });
     if (init.error) {
-      throw new ApiError("決済画面の準備に失敗しました。時間をおいて再度お試しください。");
+      throw new ApiError(t("決済画面の準備に失敗しました。時間をおいて再度お試しください。"));
     }
 
     const present = await presentPaymentSheet();
     if (present.error) {
       if (present.error.code === "Canceled") return; // ユーザーが決済画面を閉じた（エラー表示しない）
-      throw new ApiError(present.error.localizedMessage || "決済に失敗しました。カード情報をご確認ください。");
+      throw new ApiError(present.error.localizedMessage || t("決済に失敗しました。カード情報をご確認ください。"));
     }
 
     // 決済成功。以降は予約登録に失敗してもお金は動いているため、自動リトライで救済する
@@ -191,13 +193,13 @@ export default function ConfirmScreen() {
         finish(result, amount);
         return;
       } catch (e) {
-        lastMessage = e instanceof ApiError ? e.message : "通信エラー";
+        lastMessage = e instanceof ApiError ? e.message : t("通信エラー");
         if (attempt < 3) await wait(1500);
       }
     }
     throw new ApiError(
-      `お支払いは完了しましたが、ご予約の登録に失敗しました（${lastMessage}）。\n` +
-        `お手数ですが店舗（06-6267-8288）にご連絡ください。\n決済番号：${paymentIntentId}`
+      t("お支払いは完了しましたが、ご予約の登録に失敗しました（{message}）。\nお手数ですが店舗（06-6267-8288）にご連絡ください。\n決済番号：{id}",
+        { message: lastMessage, id: paymentIntentId })
     );
   };
 
@@ -212,7 +214,7 @@ export default function ConfirmScreen() {
       }
       setSubmitting(false);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "送信に失敗しました。時間をおいて再度お試しください。");
+      setError(e instanceof ApiError ? e.message : t("送信に失敗しました。時間をおいて再度お試しください。"));
       setSubmitting(false);
     }
   };
@@ -223,59 +225,58 @@ export default function ConfirmScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <StepIndicator current={4} />
-        <Text style={styles.heading}>ご予約内容の確認</Text>
+        <Text style={styles.heading}>{t("ご予約内容の確認")}</Text>
 
         <Card style={styles.card}>
-          <Text style={styles.carLine}>
-            お車：<Text style={styles.carStrong}>{order.car_official || order.car_input}</Text>
-            {categoryLabel ? `（${categoryLabel}）` : ""}
+          <Text style={styles.carLine}>{t("お車：")}<Text style={styles.carStrong}>{order.car_official || order.car_input}</Text>
+            {categoryLabel ? (isEn() ? ` (${categoryLabel})` : `（${categoryLabel}）`) : ""}
           </Text>
           {order.items.map((item, idx) => (
             <View key={`${item.id}-${idx}`} style={styles.itemRow}>
               <Text style={styles.itemName}>
-                {item.name}
-                {item.option ? `（${item.option}）` : ""}
+                {/* 画面には表示用の明細（英語モードなら英語）。送る中身 order は日本語のまま */}
+                {summary.lines[idx]?.label ?? (item.option ? `${item.name}（${item.option}）` : item.name)}
               </Text>
-              <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : "要見積り"}</Text>
+              <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : t("要見積り")}</Text>
             </View>
           ))}
           {isNominated && nominatedStaff && (
             <View style={styles.itemRow}>
-              <Text style={styles.itemName}>指名料（{nominatedStaff.name}指名）</Text>
+              <Text style={styles.itemName}>{t("指名料（{name}指名）", { name: staffName(nominatedStaff) })}</Text>
               <Text style={styles.itemPrice}>{yen(nominationFee)}</Text>
             </View>
           )}
           {selectedCoupon && discount > 0 && (
             <View style={styles.itemRow}>
-              <Text style={styles.discountName}>クーポン（{selectedCoupon.title}）</Text>
+              <Text style={styles.discountName}>{t("クーポン（{title}）", { title: selectedCoupon.title })}</Text>
               <Text style={styles.discountPrice}>−{yen(discount)}</Text>
             </View>
           )}
           <View style={[styles.itemRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>{isNominated || discount > 0 ? "お支払い合計（税込）" : "合計（税込）"}</Text>
+            <Text style={styles.totalLabel}>{isNominated || discount > 0 ? t("お支払い合計（税込）") : t("合計（税込）")}</Text>
             <Text style={styles.totalPrice}>
               {yen(grandTotal)}
-              {summary.hasQuote ? " ＋ 要見積り" : ""}
+              {summary.hasQuote ? t(" ＋ 要見積り") : ""}
             </Text>
           </View>
-          {summary.hasQuote && <Text style={styles.quoteNote}>※ 見積り項目あり（店頭にて金額をご案内します）</Text>}
-          <Text style={styles.durationText}>作業時間目安：{summary.durationText}</Text>
+          {summary.hasQuote && <Text style={styles.quoteNote}>{t("※ 見積り項目あり（店頭にて金額をご案内します）")}</Text>}
+          <Text style={styles.durationText}>{t("作業時間目安：{durationText}", { durationText: summary.durationText })}</Text>
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.rowLabel}>店舗</Text>
-          <Text style={styles.rowValue}>{shop ?? "未選択"}</Text>
-          <Text style={[styles.rowLabel, styles.rowLabelSpaced]}>ご希望日時</Text>
+          <Text style={styles.rowLabel}>{t("店舗")}</Text>
+          <Text style={styles.rowValue}>{shop ? shopLabel(shop) : t("未選択")}</Text>
+          <Text style={[styles.rowLabel, styles.rowLabelSpaced]}>{t("ご希望日時")}</Text>
           <Text style={styles.rowValue}>
             {formatDateTime(preferredDate, preferredTime)}
-            {isNominated && nominatedStaff ? `　（${nominatedStaff.name}指名）` : ""}
+            {isNominated && nominatedStaff ? "　" + t("（{name}指名）", { name: staffName(nominatedStaff) }) : ""}
           </Text>
         </Card>
 
         <Card style={styles.card}>
           {usableCoupons.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>クーポン</Text>
+              <Text style={styles.sectionLabel}>{t("クーポン")}</Text>
               <TouchableOpacity
                 style={[styles.couponRow, !couponId && styles.couponRowOn]}
                 onPress={() => setCouponId(null)}
@@ -285,7 +286,7 @@ export default function ConfirmScreen() {
                   size={18}
                   color={!couponId ? colors.gold : colors.border}
                 />
-                <Text style={styles.couponNone}>使用しない</Text>
+                <Text style={styles.couponNone}>{t("使用しない")}</Text>
               </TouchableOpacity>
               {usableCoupons.map((c) => {
                 const on = couponId === c.grant_id;
@@ -302,17 +303,17 @@ export default function ConfirmScreen() {
                     />
                     <View style={styles.couponInfo}>
                       <Text style={styles.couponTitle}>{c.title}</Text>
-                      <Text style={styles.couponMeta}>{c.target_label}に利用できます</Text>
+                      <Text style={styles.couponMeta}>{t("{target_label}に利用できます", { target_label: tList(c.target_label) })}</Text>
                     </View>
                     <Text style={styles.couponOff}>−{yen(discountOf(c))}</Text>
                   </TouchableOpacity>
                 );
               })}
-              <Text style={styles.couponNote}>クーポンは1回のご予約につき1枚までご利用いただけます。</Text>
+              <Text style={styles.couponNote}>{t("クーポンは1回のご予約につき1枚までご利用いただけます。")}</Text>
             </>
           )}
 
-          <Text style={styles.sectionLabel}>お支払い方法</Text>
+          <Text style={styles.sectionLabel}>{t("お支払い方法")}</Text>
           {/* 店頭でのお支払い。Web予約と同じ選択肢にする（2026-10-23 発注者の指摘）。
               以前は「店頭でお支払い」の1つしか無く、どれで払うか伝わらなかった。 */}
           {payOptions.map((m) => {
@@ -326,14 +327,12 @@ export default function ConfirmScreen() {
                 <View style={[styles.radio, on && styles.radioOn]}>
                   {on && <View style={styles.radioDot} />}
                 </View>
-                <Text style={styles.paymentText}>{m.name}</Text>
+                <Text style={styles.paymentText}>{t(m.name)}</Text>
               </TouchableOpacity>
             );
           })}
           {payMethod === "store" && storeMethod === "prepaid" && (
-            <Text style={styles.paymentNote}>
-              作業が終わったあと、店舗で残高から差し引きます。残高が足りない分は別のお支払い方法で承ります。
-            </Text>
+            <Text style={styles.paymentNote}>{t("作業が終わったあと、店舗で残高から差し引きます。残高が足りない分は別のお支払い方法で承ります。")}</Text>
           )}
           {/* 事前決済は鍵が設定されているときだけ出す。
               鍵が無いときに「近日対応」の押せない行を残すと、Appleの審査で
@@ -348,25 +347,21 @@ export default function ConfirmScreen() {
               <View style={[styles.radio, payMethod === "online" && styles.radioOn]}>
                 {payMethod === "online" && <View style={styles.radioDot} />}
               </View>
-              <Text style={[styles.paymentText, !onlineAvailable && styles.paymentTextDisabled]}>
-                今すぐ決済（クレジットカード / Apple Pay / Google Pay）
-              </Text>
-              {!onlineAvailable && <Text style={styles.comingSoon}>店頭払いのみ</Text>}
+              <Text style={[styles.paymentText, !onlineAvailable && styles.paymentTextDisabled]}>{t("今すぐ決済（クレジットカード / Apple Pay / Google Pay）")}</Text>
+              {!onlineAvailable && <Text style={styles.comingSoon}>{t("店頭払いのみ")}</Text>}
             </TouchableOpacity>
           )}
           {payMethod === "online" && (
-            <Text style={styles.paymentNote}>
-              「予約を確定する」を押すと決済画面が開きます。決済完了と同時にご予約が確定します。
-            </Text>
+            <Text style={styles.paymentNote}>{t("「予約を確定する」を押すと決済画面が開きます。決済完了と同時にご予約が確定します。")}</Text>
           )}
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionLabel}>備考（任意）</Text>
+          <Text style={styles.sectionLabel}>{t("備考（任意）")}</Text>
           <TextInput
             value={note}
             onChangeText={setNote}
-            placeholder="ご要望があればご記入ください"
+            placeholder={t("ご要望があればご記入ください")}
             placeholderTextColor={colors.textLight}
             style={styles.noteInput}
             multiline
@@ -382,7 +377,7 @@ export default function ConfirmScreen() {
         </ScrollView>
 
         <View style={styles.bottomBar}>
-          <GoldButton title="予約を確定する" onPress={handleSubmit} loading={submitting} />
+          <GoldButton title={t("予約を確定する")} onPress={handleSubmit} loading={submitting} />
         </View>
       </KeyboardAvoidingView>
     </View>

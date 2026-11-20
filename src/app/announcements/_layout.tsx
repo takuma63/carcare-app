@@ -14,6 +14,7 @@ import { StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 export default function AnnouncementsLayout() {
@@ -36,14 +37,14 @@ export default function AnnouncementsLayout() {
             onPress={goBack}
             hitSlop={HIT_SLOP}
             style={styles.back}
-            accessibilityLabel="お知らせの一覧に戻る"
+            accessibilityLabel={t("お知らせの一覧に戻る")}
           >
             <Feather name="chevron-left" size={26} color={colors.text} />
           </TouchableOpacity>
         ),
       }}
     >
-      <Stack.Screen name="[id]" options={{ title: "お知らせ" }} />
+      <Stack.Screen name="[id]" options={{ title: t("お知らせ") }} />
     </Stack>
   );
 }

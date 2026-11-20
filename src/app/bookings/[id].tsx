@@ -15,6 +15,8 @@ import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 import type { Booking } from "@/lib/types";
 
+import { fmtDate, isEn, t, tOption, tServer } from "@/lib/i18n";
+import { shopLabel } from "@/lib/shops";
 export default function BookingDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,16 +30,16 @@ export default function BookingDetailScreen() {
       .then(({ bookings }) => {
         const found = bookings.find((b) => b.id === id) ?? null;
         setBooking(found);
-        if (!found) setError("予約が見つかりませんでした");
+        if (!found) setError(t("予約が見つかりませんでした"));
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : "予約の取得に失敗しました"))
+      .catch((e) => setError(e instanceof ApiError ? e.message : t("予約の取得に失敗しました")))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>読み込み中…</Text>
+        <Text style={styles.muted}>{t("読み込み中…")}</Text>
       </View>
     );
   }
@@ -45,7 +47,7 @@ export default function BookingDetailScreen() {
   if (error || !booking) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{error ?? "予約が見つかりませんでした"}</Text>
+        <Text style={styles.errorText}>{error ?? t("予約が見つかりませんでした")}</Text>
       </View>
     );
   }
@@ -55,43 +57,43 @@ export default function BookingDetailScreen() {
   return (
     <ScrollView style={styles.flex} contentContainerStyle={[styles.content, { paddingTop: spacing.lg }]}>
       <View style={styles.headerRow}>
-        <Text style={styles.tokenLabel}>予約番号 {shortToken}</Text>
+        <Text style={styles.tokenLabel}>{t("予約番号 {shortToken}", { shortToken: shortToken })}</Text>
         <StatusBadge status={booking.status} />
       </View>
 
       {booking.completed_at && (
         <Card style={[styles.noticeCard, styles.noticeDone]}>
-          <Text style={styles.noticeText}>作業が完了しました。お車のお引き取りをお願いします。</Text>
+          <Text style={styles.noticeText}>{t("作業が完了しました。お車のお引き取りをお願いします。")}</Text>
         </Card>
       )}
 
       <Card style={styles.detailCard}>
-        <DetailRow label="お車" value={booking.car_official ?? "未判定"} sub={booking.category ?? undefined} />
-        <DetailRow label="店舗" value={booking.shop ?? "店頭にて調整"} />
-        <DetailRow label="希望日時" value={formatDateTime(booking.preferred_at)} />
-        <DetailRow label="作業時間目安" value={booking.duration_text ?? "店頭にて確定"} />
-        {booking.payment_status === "paid" && <DetailRow label="お支払い" value="お支払い済み" />}
+        <DetailRow label={t("お車")} value={booking.car_official ?? t("未判定")} sub={booking.category ?? undefined} />
+        <DetailRow label={t("店舗")} value={booking.shop ? shopLabel(booking.shop) : t("店頭にて調整")} />
+        <DetailRow label={t("希望日時")} value={formatDateTime(booking.preferred_at)} />
+        <DetailRow label={t("作業時間目安")} value={booking.duration_text ? tServer(booking.duration_text) : t("店頭にて確定")} />
+        {booking.payment_status === "paid" && <DetailRow label={t("お支払い")} value={t("お支払い済み")} />}
       </Card>
 
       <Card style={styles.itemsCard}>
-        <Text style={styles.itemsTitle}>ご利用メニュー</Text>
+        <Text style={styles.itemsTitle}>{t("ご利用メニュー")}</Text>
         {booking.items.map((item, idx) => (
           <View key={`${item.id}-${idx}`} style={styles.itemRow}>
             <Text style={styles.itemName}>
-              {item.name}
-              {item.option ? `（${item.option}）` : ""}
+              {t(item.name)}
+              {item.option ? (isEn() ? ` (${tOption(item.option)})` : `（${item.option}）`) : ""}
             </Text>
-            <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : "要見積り"}</Text>
+            <Text style={styles.itemPrice}>{item.price != null ? yen(item.price) : t("要見積り")}</Text>
           </View>
         ))}
         {booking.discount_amount > 0 && (
           <View style={styles.itemRow}>
-            <Text style={styles.itemName}>クーポン割引</Text>
+            <Text style={styles.itemName}>{t("クーポン割引")}</Text>
             <Text style={styles.itemPrice}>-{yen(booking.discount_amount)}</Text>
           </View>
         )}
         <View style={[styles.itemRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>合計（税込）</Text>
+          <Text style={styles.totalLabel}>{t("合計（税込）")}</Text>
           <Text style={styles.totalPrice}>{yen(booking.total_price - booking.discount_amount)}</Text>
         </View>
       </Card>
@@ -105,7 +107,7 @@ function DetailRow({ label, value, sub }: { label: string; value: string; sub?: 
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>
         {value}
-        {sub ? `（${sub}）` : ""}
+        {sub ? (isEn() ? ` (${sub})` : `（${sub}）`) : ""}
       </Text>
     </View>
   );
@@ -116,12 +118,11 @@ function yen(amount: number): string {
 }
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "店頭にて調整";
+  if (!iso) return t("店頭にて調整");
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return "店頭にて調整";
-  const wd = ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
+  if (isNaN(d.getTime())) return t("店頭にて調整");
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${wd}）${p(d.getHours())}:${p(d.getMinutes())}`;
+  return fmtDate(d, { time: `${p(d.getHours())}:${p(d.getMinutes())}` });
 }
 
 const styles = StyleSheet.create({

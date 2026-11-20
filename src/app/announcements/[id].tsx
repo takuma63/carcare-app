@@ -21,6 +21,7 @@ import { ApiError, fetchMyAnnouncements, markAnnouncementRead, type Announcement
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 export default function AnnouncementDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Announcement | null>(null);
@@ -33,7 +34,7 @@ export default function AnnouncementDetailScreen() {
       const r = await fetchMyAnnouncements();
       const found = (r.announcements ?? []).find((x) => x.id === id) ?? null;
       if (!found) {
-        setError("このお知らせは見つかりませんでした。");
+        setError(t("このお知らせは見つかりませんでした。"));
         return;
       }
       setItem(found);
@@ -45,7 +46,7 @@ export default function AnnouncementDetailScreen() {
         }
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "お知らせを取得できませんでした。");
+      setError(e instanceof ApiError ? e.message : t("お知らせを取得できませんでした。"));
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ export default function AnnouncementDetailScreen() {
   if (error || !item) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error ?? "お知らせが見つかりませんでした"}</Text>
+        <Text style={styles.error}>{error ?? t("お知らせが見つかりませんでした")}</Text>
       </View>
     );
   }

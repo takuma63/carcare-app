@@ -24,6 +24,7 @@
 ============================================================ */
 
 import Constants from "expo-constants";
+import { tServer } from "./i18n";
 
 const SUBDOMAIN = (Constants.expoConfig?.extra?.ENTRA_SUBDOMAIN as string | undefined) ?? "";
 const CLIENT_ID = (Constants.expoConfig?.extra?.ENTRA_CLIENT_ID as string | undefined) ?? "";
@@ -46,7 +47,7 @@ export class EntraError extends Error {
   /** Microsoftが返した細かい理由。画面の出し分けに使う */
   readonly suberror: string;
   constructor(message: string, suberror = "") {
-    super(message);
+    super(tServer(message));   // 英語モードなら英語に（2026-11-20）
     this.suberror = suberror;
   }
 }

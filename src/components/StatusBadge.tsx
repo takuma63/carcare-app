@@ -8,6 +8,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radius, statusColors, statusLabels } from "@/theme";
 import type { BookingStatus } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 export function StatusBadge({ status }: { status: BookingStatus }) {
   const filled = status === "in_progress" || status === "done" || status === "canceled";
@@ -20,7 +21,7 @@ export function StatusBadge({ status }: { status: BookingStatus }) {
         filled ? { backgroundColor: tone } : { backgroundColor: colors.bgSub, borderWidth: 1, borderColor: tone },
       ]}
     >
-      <Text style={[styles.text, { color: filled ? colors.white : tone }]}>{statusLabels[status] ?? status}</Text>
+      <Text style={[styles.text, { color: filled ? colors.white : tone }]}>{statusLabels[status] ? t(statusLabels[status]) : status}</Text>
     </View>
   );
 }

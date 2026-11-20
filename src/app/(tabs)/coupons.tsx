@@ -19,13 +19,14 @@ import { fetchMyCoupons, fetchMyStamps } from "@/lib/api";
 import type { Coupon, StampCard } from "@/lib/types";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 
+import { fmtDate, isEn, t, tList } from "@/lib/i18n";
 /* 有効期限の表示。期限が近いかどうかも返す */
 function expiryInfo(expiresAt: string | null) {
-  if (!expiresAt) return { label: "期限なし", soon: false };
+  if (!expiresAt) return { label: t("期限なし"), soon: false };
   const d = new Date(expiresAt);
-  if (isNaN(d.getTime())) return { label: "期限なし", soon: false };
+  if (isNaN(d.getTime())) return { label: t("期限なし"), soon: false };
   const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
-  const label = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日まで`;
+  const label = t("{date}まで", { date: fmtDate(d, { weekday: false }) });
   return { label, soon: days >= 0 && days <= 7, days };
 }
 
@@ -41,10 +42,10 @@ function DiscountBadge({ coupon, muted }: { coupon: Coupon; muted: boolean }) {
         ]}
         numberOfLines={1}
       >
-        {isPercent ? coupon.discount_value : coupon.discount_value.toLocaleString("ja-JP")}
+        {isPercent ? coupon.discount_value : (isEn() ? "¥" : "") + coupon.discount_value.toLocaleString("ja-JP")}
       </Text>
       <Text style={[styles.badgeUnit, muted && styles.mutedText]}>
-        {isPercent ? "%" : "円"}
+        {isPercent ? "%" : isEn() ? "" : "円"}
       </Text>
       <Text style={[styles.badgeOff, muted && styles.mutedText]}>OFF</Text>
     </View>
@@ -80,7 +81,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
 
           <View style={styles.metaRow}>
             <Feather name="tag" size={12} color={muted ? colors.textLight : colors.goldDeep} />
-            <Text style={[styles.meta, muted && styles.mutedText]}>{coupon.target_label}</Text>
+            <Text style={[styles.meta, muted && styles.mutedText]}>{tList(coupon.target_label)}</Text>
           </View>
 
           <View style={styles.metaRow}>
@@ -93,7 +94,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
               ]}
             >
               {exp.label}
-              {!muted && exp.soon ? `（あと${exp.days}日）` : ""}
+              {!muted && exp.soon ? t("（あと{days}日）", { days: exp.days }) : ""}
             </Text>
           </View>
         </View>
@@ -102,15 +103,15 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
       {/* 状態ラベル */}
       {coupon.status === "used" ? (
         <View style={styles.stamp}>
-          <Text style={styles.stampText}>使用済み</Text>
+          <Text style={styles.stampText}>{t("使用済み")}</Text>
         </View>
       ) : coupon.status === "expired" ? (
         <View style={styles.stamp}>
-          <Text style={styles.stampText}>期限切れ</Text>
+          <Text style={styles.stampText}>{t("期限切れ")}</Text>
         </View>
       ) : (
         <View style={styles.useHint}>
-          <Text style={styles.useHintText}>ご予約時に選択してご利用いただけます</Text>
+          <Text style={styles.useHintText}>{t("ご予約時に選択してご利用いただけます")}</Text>
         </View>
       )}
     </View>
@@ -145,11 +146,11 @@ function StampCardView({ card }: { card: StampCard }) {
 
       <Text style={styles.stampLead}>
         {done
-          ? `特典「${card.reward_title}」をお受け取りいただけます。`
-          : `あと ${card.remaining} 回のご来店で「${card.reward_title}」`}
+          ? t("特典「{reward}」をお受け取りいただけます。", { reward: card.reward_title })
+          : t("あと {remaining} 回のご来店で「{reward}」", { remaining: card.remaining, reward: card.reward_title })}
       </Text>
       {card.completed_count > 0 ? (
-        <Text style={styles.stampHistory}>これまでに {card.completed_count} 回達成しています</Text>
+        <Text style={styles.stampHistory}>{t("これまでに {completed_count} 回達成しています", { completed_count: card.completed_count })}</Text>
       ) : null}
     </View>
   );
@@ -176,7 +177,7 @@ export default function CouponsScreen() {
       }
     } catch (e) {
       console.error("[coupons] 取得に失敗:", e);
-      setError(e instanceof Error ? e.message : "クーポンを取得できませんでした");
+      setError(e instanceof Error ? e.message : t("クーポンを取得できませんでした"));
       setCoupons([]);
     }
   }, []);
@@ -216,7 +217,7 @@ export default function CouponsScreen() {
 
       {available.length > 0 ? (
         <>
-          <Text style={styles.sectionTitle}>ご利用いただけるクーポン</Text>
+          <Text style={styles.sectionTitle}>{t("ご利用いただけるクーポン")}</Text>
           {available.map((c) => (
             <CouponCard key={c.grant_id} coupon={c} />
           ))}
@@ -224,18 +225,14 @@ export default function CouponsScreen() {
       ) : (
         <View style={styles.empty}>
           <Feather name="gift" size={36} color={colors.gold} />
-          <Text style={styles.emptyTitle}>ご利用いただけるクーポンはありません</Text>
-          <Text style={styles.emptyText}>
-            クーポンが届くとこちらに表示され、{"\n"}プッシュ通知でもお知らせします。
-          </Text>
+          <Text style={styles.emptyTitle}>{t("ご利用いただけるクーポンはありません")}</Text>
+          <Text style={styles.emptyText}>{t("クーポンが届くとこちらに表示され、")}{"\n"}{t("プッシュ通知でもお知らせします。")}</Text>
         </View>
       )}
 
       {past.length > 0 ? (
         <>
-          <Text style={[styles.sectionTitle, styles.sectionTitlePast]}>
-            使用済み・期限切れ
-          </Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitlePast]}>{t("使用済み・期限切れ")}</Text>
           {past.map((c) => (
             <CouponCard key={c.grant_id} coupon={c} />
           ))}

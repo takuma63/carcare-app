@@ -7,6 +7,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, fontSize, spacing } from "@/theme";
+import { t } from "@/lib/i18n";
 
 const STEP_LABELS = ["店舗・日時", "お車", "メニュー", "確認"];
 
@@ -23,7 +24,7 @@ export function StepIndicator({ current }: { current: 1 | 2 | 3 | 4 }) {
                 <View style={[styles.dot, active && styles.dotActive]}>
                   <Text style={[styles.dotText, active && styles.dotTextActive]}>{step}</Text>
                 </View>
-                <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>{label}</Text>
+                <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>{t(label)}</Text>
               </View>
               {step < STEP_LABELS.length && <View style={[styles.line, step < current && styles.lineActive]} />}
             </React.Fragment>

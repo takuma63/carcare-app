@@ -19,6 +19,7 @@ import { fetchMyAnnouncements } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts } from "@/theme";
 
+import { t } from "@/lib/i18n";
 function TabIcon({
   name,
   color,
@@ -72,14 +73,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "ホーム",
+          title: t("ホーム"),
           tabBarIcon: ({ color, focused }) => <TabIcon name="home" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="announcements"
         options={{
-          title: "お知らせ",
+          title: t("お知らせ"),
           tabBarIcon: ({ color, focused }) => <TabIcon name="bell" color={color} focused={focused} />,
           tabBarBadge: unread > 0 ? unread : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.gold, fontSize: 10 },
@@ -88,14 +89,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="coupons"
         options={{
-          title: "クーポン",
+          title: t("クーポン"),
           tabBarIcon: ({ color, focused }) => <TabIcon name="gift" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "設定",
+          title: t("設定"),
           tabBarIcon: ({ color, focused }) => <TabIcon name="settings" color={color} focused={focused} />,
         }}
       />

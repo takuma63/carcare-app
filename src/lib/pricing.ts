@@ -10,6 +10,7 @@
 
 import type { MenuGroup, MenuItem } from "./types";
 
+import { isEn, pick, t } from "./i18n";
 export interface Selection {
   optionIndex?: number;
   qty?: number;
@@ -41,9 +42,12 @@ export interface OrderPayload {
   items: { id: string; name: string; option: string | null; price: number | null }[];
 }
 
-function minutesToText(min: number): string {
+/* ★ 英語表示（2026-11-20）：loc=true は画面に出す用（英語モードなら英語）。
+     loc=false はサーバーに送る用で、必ず日本語（店舗の管理画面に出る・料金の照合に使う） */
+function minutesToText(min: number, loc = false): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
+  if (loc && isEn()) return h && m ? `${h} hr ${m} min` : h ? `${h} hr` : `${m} min`;
   if (h && m) return `${h}時間${m}分`;
   if (h) return `${h}時間`;
   return `${m}分`;
@@ -79,10 +83,14 @@ export function itemPrice(item: MenuItem, sel: Selection, category: string): num
   return null;
 }
 
-function optionLabel(item: MenuItem, sel: Selection): string | null {
+function optionLabel(item: MenuItem, sel: Selection, loc = false): string | null {
   if (item.priceType !== "options") return null;
   const opt = (item.options ?? [])[sel.optionIndex ?? 0];
   if (!opt) return null;
+  if (loc && isEn()) {
+    const label = pick(opt.label, opt.labelEn);
+    return opt.perUnit ? `${label} (×${sel.qty ?? 1})` : label;
+  }
   return opt.perUnit ? `${opt.label}（${sel.qty ?? 1}${opt.unitLabel ?? ""}）` : opt.label;
 }
 
@@ -95,7 +103,7 @@ export function needsCategory(groups: MenuGroup[], selections: Selections, categ
 }
 
 /* 合計金額・作業時間目安・明細行を計算する（reserve.jsのrecalc()相当） */
-export function summarizeOrder(groups: MenuGroup[], selections: Selections, category: string): OrderSummary {
+export function summarizeOrder(groups: MenuGroup[], selections: Selections, category: string, loc = true): OrderSummary {
   let total = 0;
   let hasQuote = false;
   let totalMin = 0;
@@ -108,8 +116,9 @@ export function summarizeOrder(groups: MenuGroup[], selections: Selections, cate
     if (!item) return;
     const sel = selections[id];
     const price = itemPrice(item, sel, category);
-    const opt = optionLabel(item, sel);
-    const label = opt ? `${item.name}（${opt}）` : item.name;
+    const opt = optionLabel(item, sel, loc);
+    const name = loc ? pick(item.name, item.nameEn) : item.name;
+    const label = opt ? (loc && isEn() ? `${name} (${opt})` : `${name}（${opt}）`) : name;
     const isQuote = item.priceType === "quote";
 
     if (price == null) {
@@ -120,7 +129,7 @@ export function summarizeOrder(groups: MenuGroup[], selections: Selections, cate
     lines.push({ id, label, price, isQuote });
 
     if (item.durationText) {
-      timedParts.push(item.durationText);
+      timedParts.push(loc ? pick(item.durationText, item.durationTextEn) : item.durationText);
     } else if (item.durationMin != null) {
       totalMin += item.durationMin;
       numericCount++;
@@ -131,12 +140,12 @@ export function summarizeOrder(groups: MenuGroup[], selections: Selections, cate
   let durationText = "—";
   if (!isEmpty) {
     if (numericCount === 0 && timedParts.length === 0) {
-      durationText = "オプションのみ（待ち時間ほぼなし）";
+      durationText = loc ? t("オプションのみ（待ち時間ほぼなし）") : "オプションのみ（待ち時間ほぼなし）";
     } else {
       const parts: string[] = [];
-      if (numericCount > 0) parts.push(minutesToText(totalMin));
-      timedParts.forEach((t) => parts.push(t));
-      durationText = parts.join(" ＋ ");
+      if (numericCount > 0) parts.push(minutesToText(totalMin, loc));
+      timedParts.forEach((p) => parts.push(p));
+      durationText = parts.join(loc && isEn() ? " + " : " ＋ ");
     }
   }
 
@@ -151,7 +160,7 @@ export function buildOrderPayload(
   carInput: string,
   official: string
 ): OrderPayload {
-  const summary = summarizeOrder(groups, selections, category);
+  const summary = summarizeOrder(groups, selections, category, false);   // 送る中身は日本語
   return {
     car_input: carInput,
     car_official: official,
@@ -164,7 +173,7 @@ export function buildOrderPayload(
       return {
         id,
         name: item?.name ?? id,
-        option: item ? optionLabel(item, sel) : null,
+        option: item ? optionLabel(item, sel, false) : null,
         price: item ? itemPrice(item, sel, category) : null,
       };
     }),

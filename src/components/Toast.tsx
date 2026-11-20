@@ -8,6 +8,7 @@ import { Animated, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 interface Props {
   title: string;
   body: string;
@@ -36,7 +37,7 @@ export function Toast({ title, body, onPress }: Props) {
           <Text style={styles.body} numberOfLines={2}>
             {body}
           </Text>
-          {onPress && <Text style={styles.hint}>タップして詳細を見る</Text>}
+          {onPress && <Text style={styles.hint}>{t("タップして詳細を見る")}</Text>}
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>

@@ -11,6 +11,7 @@ import { fetchMenu, type MenuResult } from "./api";
 import { buildOrderPayload, itemGroupId, needsCategory, summarizeOrder, type Selection, type Selections } from "./pricing";
 import type { MenuGroup } from "./types";
 
+import { t } from "./i18n";
 interface ReservationState {
   menu: MenuResult | null;
   menuLoading: boolean;
@@ -78,7 +79,7 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
       const result = await fetchMenu();
       setMenu(result);
     } catch (e) {
-      setMenuError(e instanceof Error ? e.message : "メニューの取得に失敗しました");
+      setMenuError(e instanceof Error ? e.message : t("メニューの取得に失敗しました"));
     } finally {
       setMenuLoading(false);
     }

@@ -12,28 +12,29 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { colors, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
 export function ReserveHeader({ showBack = true }: { showBack?: boolean }) {
   const router = useRouter();
 
   const confirmClose = () => {
-    Alert.alert("予約をやめますか？", "入力した内容は保存されません。", [
-      { text: "続ける", style: "cancel" },
-      { text: "やめる", style: "destructive", onPress: () => router.replace("/") },
+    Alert.alert(t("予約をやめますか？"), t("入力した内容は保存されません。"), [
+      { text: t("続ける"), style: "cancel" },
+      { text: t("やめる"), style: "destructive", onPress: () => router.replace("/") },
     ]);
   };
 
   return (
     <View style={styles.row}>
       {showBack ? (
-        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel="前の画面に戻る">
+        <TouchableOpacity onPress={() => router.back()} hitSlop={HIT_SLOP} accessibilityLabel={t("前の画面に戻る")}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
       ) : (
         <View style={styles.spacer} />
       )}
-      <TouchableOpacity onPress={confirmClose} hitSlop={HIT_SLOP} accessibilityLabel="予約をやめる">
+      <TouchableOpacity onPress={confirmClose} hitSlop={HIT_SLOP} accessibilityLabel={t("予約をやめる")}>
         <Feather name="x" size={24} color={colors.textLight} />
       </TouchableOpacity>
     </View>

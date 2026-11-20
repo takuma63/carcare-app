@@ -13,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { GoldButton } from "@/components/GoldButton";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 export default function BookingDoneScreen() {
   const { token, paid } = useLocalSearchParams<{ token: string; paid?: string }>();
   const router = useRouter();
@@ -36,25 +37,25 @@ export default function BookingDoneScreen() {
         <Feather name="check" size={36} color={colors.white} />
       </Animated.View>
 
-      <Text style={styles.title}>ご予約ありがとう{"\n"}ございました</Text>
-      <Text style={styles.lead}>ご予約を承りました。確定のご連絡を改めて差し上げます。</Text>
+      <Text style={styles.title}>{t("ご予約ありがとう")}{"\n"}{t("ございました")}</Text>
+      <Text style={styles.lead}>{t("ご予約を承りました。確定のご連絡を改めて差し上げます。")}</Text>
 
       <View style={styles.ticket}>
         <Text style={styles.ticketLabel}>RECEPTION TICKET</Text>
-        <Text style={styles.tokenLabel}>予約番号 {shortToken}</Text>
+        <Text style={styles.tokenLabel}>{t("予約番号 {shortToken}", { shortToken: shortToken })}</Text>
         {paidAmount != null && !isNaN(paidAmount) && (
           <View style={styles.paidBadge}>
             <Feather name="check-circle" size={14} color={colors.white} />
-            <Text style={styles.paidBadgeText}>お支払い済み ¥{paidAmount.toLocaleString("ja-JP")}</Text>
+            <Text style={styles.paidBadgeText}>{t("お支払い済み ¥{amount}", { amount: paidAmount.toLocaleString("ja-JP") })}</Text>
           </View>
         )}
         <View style={styles.dashedLine} />
-        <Text style={styles.hint}>ご来店時は、お名前または予約番号を{"\n"}スタッフにお伝えください</Text>
+        <Text style={styles.hint}>{t("ご来店時は、お名前または予約番号を")}{"\n"}{t("スタッフにお伝えください")}</Text>
       </View>
 
-      <Text style={styles.subHint}>ご予約内容は「予約履歴」からいつでもご確認いただけます。</Text>
+      <Text style={styles.subHint}>{t("ご予約内容は「予約履歴」からいつでもご確認いただけます。")}</Text>
 
-      <GoldButton title="ホームへ戻る" onPress={() => router.replace("/")} style={styles.homeButton} />
+      <GoldButton title={t("ホームへ戻る")} onPress={() => router.replace("/")} style={styles.homeButton} />
     </ScrollView>
   );
 }

@@ -31,9 +31,10 @@ import { useAuth } from "@/lib/auth-context";
 import { track } from "@/lib/analytics";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 import type { Booking, StampCard } from "@/lib/types";
-import { SHOPS, shopMapLinkUrl } from "@/lib/shops";
+import { SHOPS, shopLabel, shopMapLinkUrl } from "@/lib/shops";
 
 
+import { fmtDate, t } from "@/lib/i18n";
 const ACTIVE_STATUSES = new Set(["new", "confirmed", "in_progress"]);
 
 /* 作業の進み具合を3段階で見せる。管理画面で店舗が状態を進めると、
@@ -48,15 +49,14 @@ function stepIndex(status: string): number {
   if (status === "in_progress") return 1;
   return 0;
 }
-/* 「10月28日（火）10:00〜」の形。日時の無いご予約（店頭で決める）は null */
-const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+/* 「10月28日（火）10:00〜」の形（英語は「Tue, Oct 28 10:00」）。日時の無いご予約（店頭で決める）は null */
 function bookingWhen(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK[d.getDay()]}）${hh}:${mm}〜`;
+  return fmtDate(d, { year: false, time: t("{time}〜", { time: `${hh}:${mm}` }) });
 }
 function isToday(iso: string | null): boolean {
   if (!iso) return false;
@@ -148,13 +148,13 @@ export default function HomeScreen() {
         {customer?.name ? (
           <View style={styles.greet}>
             <Text style={styles.greetEyebrow}>Welcome</Text>
-            <Text style={styles.greetName}>{customer.name} 様</Text>
+            <Text style={styles.greetName}>{t("{name} 様", { name: customer.name })}</Text>
           </View>
         ) : null}
 
         {/* 02 クイックアクション */}
         <View style={styles.actions}>
-          <GoldButton title="予約する" icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
+          <GoldButton title={t("予約する")} icon="calendar" onPress={() => router.push("/reserve")} style={styles.actionMain} />
         </View>
 
         {/* ご予約（2026-10-26 作り直し）
@@ -166,17 +166,17 @@ export default function HomeScreen() {
         {activeBooking && (
           <View style={[styles.bk, isWorking && styles.bkWorking]}>
             <View style={styles.bkHead}>
-              <Text style={styles.bkTitle}>ご予約</Text>
+              <Text style={styles.bkTitle}>{t("ご予約")}</Text>
               <StatusBadge status={activeBooking.status} />
             </View>
 
             <Text style={styles.bkWhen}>
-              {bookingWhen(activeBooking.preferred_at) ?? "日時は店頭でご相談"}
+              {bookingWhen(activeBooking.preferred_at) ?? t("日時は店頭でご相談")}
             </Text>
             <Text style={styles.bkMenu}>{primaryMenuName(activeBooking)}</Text>
             <View style={styles.bkShopRow}>
               <Feather name="map-pin" size={14} color={colors.goldDeep} />
-              <Text style={styles.bkShop}>{activeBooking.shop ?? "店舗未定"}</Text>
+              <Text style={styles.bkShop}>{activeBooking.shop ? shopLabel(activeBooking.shop) : t("店舗未定")}</Text>
             </View>
 
             {/* 作業の進み具合。店舗が管理画面で状態を進めると、ここが動く */}
@@ -188,17 +188,17 @@ export default function HomeScreen() {
                   <View key={st.key} style={styles.step}>
                     {i > 0 ? <View style={[styles.stepLine, reached && styles.stepLineOn]} /> : null}
                     <View style={[styles.stepDot, reached && styles.stepDotOn]} />
-                    <Text style={[styles.stepLabel, reached && styles.stepLabelOn]}>{st.label}</Text>
+                    <Text style={[styles.stepLabel, reached && styles.stepLabelOn]}>{t(st.label)}</Text>
                   </View>
                 );
               })}
             </View>
 
             {isWorking && (
-              <Text style={styles.ticketNotice}>作業中です。完了したら通知でお知らせします。</Text>
+              <Text style={styles.ticketNotice}>{t("作業中です。完了したら通知でお知らせします。")}</Text>
             )}
             {activeBooking.status === "done" && (
-              <Text style={styles.ticketDone}>本日の作業が完了しました。ありがとうございました。</Text>
+              <Text style={styles.ticketDone}>{t("本日の作業が完了しました。ありがとうございました。")}</Text>
             )}
 
             <View style={styles.bkActions}>
@@ -206,24 +206,22 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   style={styles.bkBtn}
                   onPress={() => Linking.openURL(shopMapLinkUrl(activeBooking.shop as string)).catch(() => {})}
-                  accessibilityLabel={`${activeBooking.shop}への経路を調べる`}
+                  accessibilityLabel={t("{shop}への経路を調べる", { shop: shopLabel(activeBooking.shop) })}
                 >
                   <Feather name="navigation" size={15} color={colors.text} />
-                  <Text style={styles.bkBtnText}>経路を調べる</Text>
+                  <Text style={styles.bkBtnText}>{t("経路を調べる")}</Text>
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity
                 style={styles.bkBtn}
                 onPress={() => router.push(`/bookings/${activeBooking.id}`)}
-                accessibilityLabel="ご予約の詳細を開く"
+                accessibilityLabel={t("ご予約の詳細を開く")}
               >
                 <Feather name="file-text" size={15} color={colors.text} />
-                <Text style={styles.bkBtnText}>予約の詳細</Text>
+                <Text style={styles.bkBtnText}>{t("予約の詳細")}</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.bkNo}>
-              予約番号 {activeBooking.public_token.slice(0, 8).toUpperCase()}
-            </Text>
+            <Text style={styles.bkNo}>{t("予約番号 {toUpperCase}", { toUpperCase: activeBooking.public_token.slice(0, 8).toUpperCase() })}</Text>
           </View>
         )}
 
@@ -235,16 +233,14 @@ export default function HomeScreen() {
           style={styles.cars}
           onPress={() => router.push("/vehicles")}
           activeOpacity={0.85}
-          accessibilityLabel={vehicles.length === 0 ? "車両登録を開く" : "登録済みの車両を開く"}
+          accessibilityLabel={vehicles.length === 0 ? t("車両登録を開く") : t("登録済みの車両を開く")}
         >
           <View style={styles.carsHead}>
-            <Text style={styles.carsTitle}>{vehicles.length === 0 ? "車両登録" : "登録済みの車両"}</Text>
+            <Text style={styles.carsTitle}>{vehicles.length === 0 ? t("車両登録") : t("登録済みの車両")}</Text>
             <Feather name="chevron-right" size={18} color={colors.textLight} />
           </View>
           {vehicles.length === 0 ? (
-            <Text style={styles.carsEmpty}>
-              お持ちの車両をご登録ください。ご予約の際に選べるようになります。
-            </Text>
+            <Text style={styles.carsEmpty}>{t("お持ちの車両をご登録ください。ご予約の際に選べるようになります。")}</Text>
           ) : (
             vehicles.map((v) => {
               // 色とナンバーは、入っているものだけを中黒でつなぐ
@@ -268,10 +264,10 @@ export default function HomeScreen() {
             style={styles.prepaid}
             onPress={() => router.push("/prepaid")}
             activeOpacity={0.85}
-            accessibilityLabel="回数券の残高と履歴を見る"
+            accessibilityLabel={t("回数券の残高と履歴を見る")}
           >
             <View style={styles.prepaidBody}>
-              <Text style={styles.prepaidLabel}>回数券の残高</Text>
+              <Text style={styles.prepaidLabel}>{t("回数券の残高")}</Text>
               <Text style={styles.prepaidValue}>¥{prepaid.toLocaleString("ja-JP")}</Text>
             </View>
             <Feather name="chevron-right" size={20} color={colors.textLight} />
@@ -284,7 +280,7 @@ export default function HomeScreen() {
             style={styles.reward}
             onPress={() => router.push("/coupons")}
             activeOpacity={0.85}
-            accessibilityLabel="クーポンとスタンプを見る"
+            accessibilityLabel={t("クーポンとスタンプを見る")}
           >
             <View style={styles.rewardIcon}>
               <Feather name="gift" size={20} color={colors.gold} />
@@ -292,11 +288,9 @@ export default function HomeScreen() {
 
             <View style={styles.rewardBody}>
               {couponCount > 0 ? (
-                <Text style={styles.rewardTitle}>
-                  ご利用いただけるクーポンが {couponCount} 枚あります
-                </Text>
+                <Text style={styles.rewardTitle}>{t("ご利用いただけるクーポンが {couponCount} 枚あります", { couponCount: couponCount })}</Text>
               ) : (
-                <Text style={styles.rewardTitle}>来店スタンプ</Text>
+                <Text style={styles.rewardTitle}>{t("来店スタンプ")}</Text>
               )}
 
               {stamp ? (
@@ -309,15 +303,14 @@ export default function HomeScreen() {
                       ]}
                     />
                   </View>
-                  <Text style={styles.rewardSub}>
-                    スタンプ {stamp.stamps} / {stamp.required_count}
+                  <Text style={styles.rewardSub}>{t("スタンプ {stamps} / {required_count}", { stamps: stamp.stamps, required_count: stamp.required_count })}
+                    {"　"}
                     {stamp.remaining > 0
-                      ? `　あと ${stamp.remaining} 回で「${stamp.reward_title}」`
-                      : `　「${stamp.reward_title}」をお受け取りいただけます`}
-                  </Text>
+                      ? t("あと {remaining} 回で「{reward}」", { remaining: stamp.remaining, reward: stamp.reward_title })
+                      : t("「{reward}」をお受け取りいただけます", { reward: stamp.reward_title })}</Text>
                 </>
               ) : (
-                <Text style={styles.rewardSub}>タップしてご確認ください</Text>
+                <Text style={styles.rewardSub}>{t("タップしてご確認ください")}</Text>
               )}
             </View>
 
@@ -332,18 +325,18 @@ export default function HomeScreen() {
           style={styles.news}
           onPress={() => router.push("/bookings")}
           activeOpacity={0.85}
-          accessibilityLabel="ご利用履歴を開く"
+          accessibilityLabel={t("ご利用履歴を開く")}
         >
           <Feather name="calendar" size={18} color={colors.textLight} />
-          <Text style={styles.newsText}>ご利用履歴</Text>
+          <Text style={styles.newsText}>{t("ご利用履歴")}</Text>
           <Feather name="chevron-right" size={18} color={colors.textLight} />
         </TouchableOpacity>
 
         {/* 04 店舗一覧（淡灰の帯＋白カード行） */}
         <View style={styles.stores}>
           <Text style={styles.storesEyebrow}>Our Stores</Text>
-          <Text style={styles.storesTitle}>店舗一覧</Text>
-          <Text style={styles.storesHours}>営業時間 10:00〜19:00（平日・土日祝）</Text>
+          <Text style={styles.storesTitle}>{t("店舗一覧")}</Text>
+          <Text style={styles.storesHours}>{t("営業時間 10:00〜19:00（平日・土日祝）")}</Text>
           {/* ★ 押すと店舗ページへ（2026-10-26）。以前は直接電話がかかっていたが、
               場所を確かめたい方や押し間違いがあるため、地図と電話ボタンのあるページを挟む */}
           {SHOPS.map((store) => (
@@ -351,10 +344,10 @@ export default function HomeScreen() {
               key={store.name}
               style={styles.storeCard}
               onPress={() => router.push(`/shops/${encodeURIComponent(store.name)}`)}
-              accessibilityLabel={`${store.name}のご案内を開く`}
+              accessibilityLabel={t("{shop}のご案内を開く", { shop: shopLabel(store.name) })}
             >
               <View style={styles.storeMain}>
-                <Text style={styles.storeName}>{store.name}</Text>
+                <Text style={styles.storeName}>{shopLabel(store.name)}</Text>
                 <Text style={styles.storeTel}>{store.tel}</Text>
               </View>
               <Feather name="chevron-right" size={18} color={colors.textLight} />
@@ -368,9 +361,10 @@ export default function HomeScreen() {
 
 function primaryMenuName(booking: Booking): string {
   const first = booking.items[0];
-  if (!first) return "メニュー未定";
+  if (!first) return t("メニュー未定");
   const rest = booking.items.length - 1;
-  return rest > 0 ? `${first.name} 他${rest}件` : first.name;
+  const name = t(first.name);   // 予約に記録された日本語のメニュー名。英訳表にあれば英語
+  return rest > 0 ? t("{name} 他{rest}件", { name, rest }) : name;
 }
 
 const styles = StyleSheet.create({

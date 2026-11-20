@@ -8,9 +8,10 @@
 import React from "react";
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { findShop, shopMapEmbedUrl, shopMapLinkUrl } from "@/lib/shops";
+import { findShop, shopMapEmbedUrl, shopMapLinkUrl, shopAddress, shopLabel } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";
 
+import { t } from "@/lib/i18n";
 /* mapOnly：地図だけを出す（店舗ページ用。住所・電話・経路はページ側で大きく出すため） */
 export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null; mapOnly?: boolean }) {
   const shop = findShop(shopName);
@@ -21,7 +22,7 @@ export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null
       <View style={styles.map}>
         {React.createElement("iframe", {
           src: shopMapEmbedUrl(shop.name),
-          title: `${shop.name}の地図`,
+          title: t("{shop}の地図", { shop: shopLabel(shop.name) }),
           loading: "lazy",
           style: { width: "100%", height: "100%", border: 0 },
         })}
@@ -30,7 +31,7 @@ export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null
       {mapOnly ? null : (
       <>
       <Text style={styles.address}>
-        {shop.zip} {shop.address}
+        {shop.zip} {shopAddress(shop)}
       </Text>
 
       <View style={styles.actions}>
@@ -39,7 +40,7 @@ export function ShopMap({ shopName, mapOnly = false }: { shopName: string | null
           onPress={() => Linking.openURL(shopMapLinkUrl(shop.name)).catch(() => {})}
         >
           <Feather name="map-pin" size={15} color={colors.goldDeep} />
-          <Text style={styles.actionText}>経路を調べる</Text>
+          <Text style={styles.actionText}>{t("経路を調べる")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.action}
