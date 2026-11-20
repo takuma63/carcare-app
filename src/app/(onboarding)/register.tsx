@@ -341,11 +341,11 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg + 28 }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* 言語の切り替え（2026-11-20）。切り替えると画面を組み直すので、入力前の最初の段階だけ出す */}
-        {stepIndex === 0 && <LangToggle compact />}
+        {stepIndex === 0 && <LangToggle style={{ position: "absolute", top: insets.top + 16, right: spacing.lg, zIndex: 2 }} />}
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
         {/* 進捗。細い線が伸びるだけにして、上部を重くしない */}

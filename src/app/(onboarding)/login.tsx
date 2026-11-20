@@ -65,10 +65,10 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg + 28 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <LangToggle compact />
+        <LangToggle style={{ position: "absolute", top: insets.top + 16, right: spacing.lg, zIndex: 2 }} />
         <Image source={require("@/assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
         <Text style={styles.title}>{t("ログイン")}</Text>

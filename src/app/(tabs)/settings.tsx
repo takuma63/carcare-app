@@ -82,9 +82,13 @@ export default function SettingsScreen() {
         <Row label={t("メールアドレス")} value={customer?.email ?? t("未登録")} />
       </Card>
 
-      {/* 表示言語（2026-11-20）。見出しは両方の言語で出す（読めない言語のまま迷わないように） */}
-      <Text style={[styles.sectionTitle, styles.langTitle]}>言語 / Language</Text>
-      <LangToggle />
+      {/* 表示言語（2026-11-20）。項目名は両方の言語で出す（読めない言語のまま迷わないように） */}
+      <Card style={[styles.card, styles.langCard]}>
+        <View style={styles.row}>
+          <Text style={styles.label}>言語 / Language</Text>
+          <LangToggle icon={false} />
+        </View>
+      </Card>
 
       <View style={styles.footer}>
         <GoldButton title={t("ログアウト")} variant="secondary" onPress={handleSignOut} />
@@ -177,7 +181,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: spacing.xxl,
   },
-  langTitle: {
-    marginTop: spacing.xl,
+  langCard: {
+    marginTop: spacing.md,
   },
 });
