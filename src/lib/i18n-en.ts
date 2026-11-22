@@ -588,6 +588,7 @@ export const EN: Record<string, string> = {
 
 /* ---------- サーバーから届く、中身が差し込まれる文言 ---------- */
 export const EN_PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
+  [/^申し訳ございません。ご選択の内容は作業に約(\d+)分かかるため、この時間からはお受けできません。お手数ですが、別の時間をお選びください。$/, (m) => `Sorry, your selection takes about ${m[1]} minutes, so it can't start at this time. Please choose another time.`],
   [/^ご登録いただけるお車は(\d+)台までです。入れ替える場合は、他のお車を外してください。$/, (m) => `You can register up to ${m[1]} cars. To add another, remove one first.`],
   [/^ご登録いただけるお車は(\d+)台までです。$/, (m) => `You can register up to ${m[1]} cars.`],
   [/^指名予約は (.+) の枠のみ承っております。$/, (m) => `Nomination bookings are only available for the ${m[1]} slot.`],
