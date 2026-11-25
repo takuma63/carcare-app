@@ -4,7 +4,8 @@
 ============================================================ */
 
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Animated, StyleSheet, TouchableOpacity } from "react-native";
+import { Text } from "@/components/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, fonts, fontSize, radius, shadow, spacing } from "@/theme";
 

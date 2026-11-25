@@ -15,7 +15,8 @@
 ============================================================ */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { useLocalSearchParams } from "expo-router";
 import { ApiError, fetchMyAnnouncements, markAnnouncementRead, type Announcement } from "@/lib/api";
 import { track } from "@/lib/analytics";

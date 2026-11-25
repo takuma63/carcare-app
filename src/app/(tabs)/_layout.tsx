@@ -18,6 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { fetchMyAnnouncements } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts } from "@/theme";
+import { androidTextFix } from "@/components/AppText";
 
 import { t } from "@/lib/i18n";
 function TabIcon({
@@ -58,7 +59,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.goldDeep,
         tabBarInactiveTintColor: colors.textLight,
-        tabBarLabelStyle: { fontFamily: fonts.sans, fontSize: 11 },
+        // Android は日本語書体の上下に余分なすき間が付いて文字が下で切れるため、それを切る（AppText.tsx 参照）
+        tabBarLabelStyle: { fontFamily: fonts.sans, fontSize: 11, ...androidTextFix },
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopWidth: 0,

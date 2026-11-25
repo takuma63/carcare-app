@@ -10,8 +10,13 @@
 
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from "react-native";
+import { Text } from "@/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";

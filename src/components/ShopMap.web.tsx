@@ -6,7 +6,8 @@
 ============================================================ */
 
 import React from "react";
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Linking, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { Feather } from "@expo/vector-icons";
 import { findShop, shopMapEmbedUrl, shopMapLinkUrl, shopAddress, shopLabel } from "@/lib/shops";
 import { colors, fonts, fontSize, radius, spacing } from "@/theme";

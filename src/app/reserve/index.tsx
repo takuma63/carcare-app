@@ -21,7 +21,8 @@
 ============================================================ */
 
 import React, { useEffect, useRef, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, type LayoutChangeEvent } from "react-native";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, type LayoutChangeEvent } from "react-native";
+import { Text } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { StepIndicator } from "@/components/StepIndicator";

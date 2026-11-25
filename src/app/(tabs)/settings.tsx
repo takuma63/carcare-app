@@ -7,7 +7,8 @@
 ============================================================ */
 
 import React, { useState } from "react";
-import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GoldButton } from "@/components/GoldButton";
 import { Card } from "@/components/Card";
@@ -163,20 +164,26 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 2,
   },
+  /* ★ 2026-11-25 幅の狭い Android で、長いメールアドレスが画面の外へはみ出した。
+     見出しは縮めず、値の側を残りの幅に収めて右寄せで折り返す。 */
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: spacing.md,
     paddingVertical: 6,
   },
   label: {
     fontFamily: fonts.sans,
     fontSize: fontSize.caption,
     color: colors.textLight,
+    flexShrink: 0,
   },
   value: {
     fontFamily: fonts.sansMedium,
     fontSize: fontSize.caption,
     color: colors.text,
+    flexShrink: 1,
+    textAlign: "right",
   },
   footer: {
     marginTop: spacing.xxl,

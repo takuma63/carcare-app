@@ -9,7 +9,8 @@
 ============================================================ */
 
 import React, { useEffect } from "react";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { useLocalSearchParams } from "expo-router";
 import { ShopMap } from "@/components/ShopMap";
 import { GoldButton } from "@/components/GoldButton";

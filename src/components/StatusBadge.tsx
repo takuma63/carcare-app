@@ -5,7 +5,8 @@
 ============================================================ */
 
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { colors, fonts, radius, statusColors, statusLabels } from "@/theme";
 import type { BookingStatus } from "@/lib/types";
 import { t } from "@/lib/i18n";

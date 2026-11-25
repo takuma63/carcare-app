@@ -5,7 +5,8 @@
 ============================================================ */
 
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { Text } from "@/components/AppText";
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
 import { colors, fonts, fontSize, radius } from "@/theme";

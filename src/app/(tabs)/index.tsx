@@ -15,10 +15,10 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";

@@ -14,11 +14,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text, TextInput } from "@/components/AppText";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { Feather } from "@expo/vector-icons";

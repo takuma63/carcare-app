@@ -12,7 +12,8 @@
 ============================================================ */
 
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View, type ViewStyle } from "react-native";
+import { StyleSheet, TouchableOpacity, View, type ViewStyle } from "react-native";
+import { Text } from "@/components/AppText";
 import { Feather } from "@expo/vector-icons";
 import { useLang, type Lang } from "@/lib/i18n";
 import { colors, fonts } from "@/theme";

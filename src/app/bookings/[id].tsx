@@ -5,7 +5,8 @@
 ============================================================ */
 
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Card } from "@/components/Card";
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: spacing.md,
   },
   detailLabel: {
     fontFamily: fonts.sans,
